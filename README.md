@@ -61,6 +61,9 @@
 
 <img width="1442" height="1007" alt="image" src="https://github.com/user-attachments/assets/79802600-4cb8-44c4-9f98-f5dc14850e47" />
 
+> 以下为浅色主题模式的示例界面
+> <img width="1442" height="1007" alt="image" src="https://github.com/user-attachments/assets/f4671ed1-9d56-4cba-8363-324769ef2fe3" />
+
 
 ## 下载与运行相关
 
