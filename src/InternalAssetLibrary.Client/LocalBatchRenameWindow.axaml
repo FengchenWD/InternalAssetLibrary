@@ -1,0 +1,103 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:localAssets="using:InternalAssetLibrary.Client.Core.LocalAssets"
+        x:Class="InternalAssetLibrary.Client.LocalBatchRenameWindow"
+        Title="批量重命名本地素材"
+        Width="660"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBackgroundBrush}"
+        TransparencyLevelHint="Mica, AcrylicBlur, None"
+        KeyDown="Window_OnKeyDown">
+  <Border Classes="glass"
+          Margin="18"
+          Padding="22"
+          CornerRadius="8">
+    <Grid x:Name="DialogContent" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="18">
+      <StackPanel Spacing="5">
+        <TextBlock Text="批量重命名本地素材" Classes="sectionTitle" />
+        <TextBlock x:Name="SelectionSummaryText"
+                   Classes="muted"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="按当前列表顺序，从 01 开始自动编号；超过 99 项时会自动扩展序号位数。"
+                   Classes="muted"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+
+      <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12">
+        <StackPanel Spacing="6">
+          <TextBlock Text="统一前缀" Classes="muted" />
+          <TextBox x:Name="PrefixBox"
+                   MaxLength="100"
+                   Watermark="可留空"
+                   TextChanged="NamePart_OnTextChanged" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Spacing="6">
+          <TextBlock Text="统一后缀" Classes="muted" />
+          <TextBox x:Name="SuffixBox"
+                   MaxLength="100"
+                   Watermark="可留空"
+                   TextChanged="NamePart_OnTextChanged" />
+        </StackPanel>
+      </Grid>
+
+      <StackPanel Grid.Row="2" Spacing="8">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="结果预览" Classes="sectionTitle" FontSize="14" />
+          <TextBlock x:Name="PreviewOverflowText"
+                     Grid.Column="1"
+                     Classes="muted"
+                     VerticalAlignment="Center" />
+        </Grid>
+        <Border Padding="12"
+                CornerRadius="8"
+                Background="{DynamicResource SurfaceRaisedBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,20,*">
+              <TextBlock Text="原文件名" Classes="muted" />
+              <TextBlock Grid.Column="2" Text="新文件名" Classes="muted" />
+            </Grid>
+            <ItemsControl x:Name="PreviewItems">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="localAssets:LocalBatchRenamePlanItem">
+                  <Grid ColumnDefinitions="*,20,*" MinHeight="30">
+                    <TextBlock Text="{Binding OriginalFileName}"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1"
+                               Text="›"
+                               Classes="muted"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding NewFileName}"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource AccentBrush}"
+                               VerticalAlignment="Center" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+        <TextBlock x:Name="StatusText"
+                   Foreground="{DynamicResource ErrorBrush}"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+
+      <StackPanel Grid.Row="3"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  Spacing="8">
+        <Button Classes="quiet" Click="Cancel_OnClick">取消</Button>
+        <Button x:Name="ConfirmButton"
+                Classes="accent"
+                Click="Confirm_OnClick">确认重命名</Button>
+      </StackPanel>
+    </Grid>
+  </Border>
+</Window>

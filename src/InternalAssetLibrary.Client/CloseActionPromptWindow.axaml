@@ -1,0 +1,80 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="InternalAssetLibrary.Client.CloseActionPromptWindow"
+        Title="关闭云汀素材管理工具"
+        Width="430"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="AcrylicBlur">
+  <Border Margin="8"
+          Padding="22"
+          CornerRadius="14"
+          Background="{DynamicResource SurfaceBrush}"
+          BorderBrush="{DynamicResource BorderBrush}"
+          BorderThickness="1"
+          BoxShadow="0 10 30 0 #55000000">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="4"
+                    Background="Transparent"
+                    PointerPressed="Chrome_OnPointerPressed">
+          <TextBlock Text="关闭云汀素材管理工具"
+                     Classes="sectionTitle" />
+          <TextBlock Text="请选择点击关闭按钮后的操作"
+                     Classes="muted" />
+        </StackPanel>
+        <Button x:Name="CloseButton"
+                Grid.Column="1"
+                Width="36"
+                Height="36"
+                MinHeight="36"
+                Padding="0"
+                Classes="quiet"
+                Content="×"
+                Click="Cancel_OnClick" />
+      </Grid>
+
+      <StackPanel Grid.Row="1" Margin="0,20,0,0" Spacing="10">
+        <Border Padding="14" CornerRadius="8"
+                Background="{DynamicResource SurfaceRaisedBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1">
+          <RadioButton x:Name="MinimizeToTrayOption"
+                       GroupName="CloseAction"
+                       Content="最小化到系统托盘"
+                       IsChecked="True" />
+        </Border>
+        <Border Padding="14" CornerRadius="8"
+                Background="{DynamicResource SurfaceRaisedBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1">
+          <RadioButton x:Name="ExitApplicationOption"
+                       GroupName="CloseAction"
+                       Content="关闭软件" />
+        </Border>
+      </StackPanel>
+
+      <CheckBox x:Name="DoNotAskAgainCheckBox"
+                Grid.Row="2"
+                Margin="0,18,0,0"
+                Content="不再提示" />
+
+      <StackPanel Grid.Row="3"
+                  Margin="0,20,0,0"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  Spacing="8">
+        <Button Classes="quiet"
+                Click="Cancel_OnClick">取消</Button>
+        <Button x:Name="ConfirmButton"
+                Classes="accent"
+                MinWidth="110"
+                Click="Confirm_OnClick">确定</Button>
+      </StackPanel>
+    </Grid>
+  </Border>
+</Window>

@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>内部共享素材库</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+
+  <main id="loginView" class="login-shell">
+    <section class="login-panel">
+      <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="eyebrow">TEAM ASSET DESK</p>
+      <h1>内部共享素材库</h1>
+      <p class="muted">使用管理员分配的团队账号登录</p>
+      <form id="loginForm" class="stack-form">
+        <label>用户名或邮箱<input id="loginIdentifier" autocomplete="username" maxlength="254" required></label>
+        <label>密码<input id="loginPassword" type="password" autocomplete="current-password" maxlength="128" required></label>
+        <button class="primary wide" type="submit">登录</button>
+      </form>
+      <p id="loginError" class="form-error" role="alert"></p>
+    </section>
+  </main>
+
+  <div id="appView" class="app-shell hidden">
+    <aside class="sidebar">
+      <header class="side-brand">
+        <div class="brand-mark compact" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div><strong>内部共享素材库</strong><small>Asset Desk</small></div>
+      </header>
+      <nav id="mainNav" aria-label="主导航">
+        <button data-view="overview" class="active"><span class="nav-icon">⌂</span>概览</button>
+        <button data-view="assets"><span class="nav-icon">▦</span>共享素材</button>
+        <button data-view="users"><span class="nav-icon">◎</span>团队成员</button>
+        <button data-view="profile"><span class="nav-icon">◉</span>个人资料</button>
+        <button id="adminNav" data-view="admin" class="hidden"><span class="nav-icon">◇</span>管理后台</button>
+      </nav>
+      <footer class="side-footer">
+        <div id="sideIdentity" class="identity"></div>
+        <a class="legal-footer" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">赣ICP备2026021846号-1</a>
+        <button id="logoutButton" class="ghost wide">退出登录</button>
+      </footer>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <p id="viewEyebrow" class="eyebrow">WORKSPACE</p>
+          <h2 id="viewTitle">概览</h2>
+        </div>
+        <div class="top-actions">
+          <span id="connectionBadge" class="status-dot"><i></i>已连接</span>
+          <button id="refreshButton" class="icon-button" type="button" title="刷新当前页面" aria-label="刷新当前页面">↻</button>
+        </div>
+      </header>
+
+      <section id="overviewView" class="view active">
+        <div class="metric-grid">
+          <article><span>有效素材</span><strong id="activeAssetMetric">—</strong><small>团队共享库</small></article>
+          <article><span>原文件占用</span><strong id="storageMetric">—</strong><small id="quotaMetric">配额读取中</small></article>
+          <article><span>团队成员</span><strong id="memberMetric">—</strong><small>包含已停用账号</small></article>
+          <article><span>我的回收站</span><strong id="trashMetric">—</strong><small>15 天自动清理</small></article>
+        </div>
+        <div class="split-band">
+          <section>
+            <div class="section-heading"><div><p class="eyebrow">RECENT</p><h3>最近素材</h3></div><button data-go="assets" class="text-button">查看全部</button></div>
+            <div id="recentAssets" class="compact-list"></div>
+          </section>
+          <section>
+            <div class="section-heading"><div><p class="eyebrow">TEAM</p><h3>最近成员</h3></div><button data-go="users" class="text-button">成员列表</button></div>
+            <div id="recentUsers" class="compact-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="assetsView" class="view">
+        <div class="toolbar">
+          <div class="segmented" id="assetStateTabs">
+            <button data-state="active" class="active">全部素材</button><button data-state="recycled">回收站</button>
+          </div>
+          <div class="toolbar-end">
+            <button id="openAssetDialog" class="primary">新增元数据</button>
+          </div>
+        </div>
+        <div class="filter-row">
+          <label class="search-field"><span>⌕</span><input id="assetSearch" placeholder="搜索名称、文件名、标签或备注"></label>
+          <select id="assetCategory" aria-label="素材大类">
+            <option value="">全部大类</option><option value="bgm">BGM</option><option value="sound-effect">音效</option><option value="image">图片</option><option value="video">视频</option>
+          </select>
+          <select id="assetSort" aria-label="排序">
+            <option value="uploadedAt-desc">最新上传</option><option value="uploadedAt-asc">最早上传</option><option value="name-asc" selected>名称 A-Z</option><option value="name-desc">名称 Z-A</option><option value="size-desc">文件从大到小</option><option value="size-asc">文件从小到大</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>素材</th><th>大类</th><th>标签</th><th>上传者</th><th>大小</th><th>时间</th><th class="align-right">操作</th></tr></thead><tbody id="assetRows"></tbody></table>
+          <div id="assetEmpty" class="empty hidden">暂无符合条件的素材</div>
+        </div>
+      </section>
+
+      <section id="usersView" class="view">
+        <div class="filter-row users-filter"><label class="search-field"><span>⌕</span><input id="userSearch" placeholder="搜索显示名称或用户名"></label></div>
+        <div id="userGrid" class="user-grid"></div>
+        <div id="userEmpty" class="empty hidden">没有找到成员</div>
+      </section>
+
+      <section id="profileView" class="view">
+        <div class="profile-layout">
+          <aside class="profile-summary">
+            <button id="avatarButton" class="avatar large" type="button" title="更换头像"><span id="avatarInitial">U</span><img id="avatarImage" class="hidden" alt="当前头像"></button>
+            <input id="avatarInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+            <h3 id="profileHeading">—</h3><p id="profileUsername" class="muted">—</p>
+            <button id="removeAvatarButton" class="text-button">移除头像</button>
+          </aside>
+          <div class="profile-editor">
+            <div class="section-heading"><div><p class="eyebrow">PROFILE</p><h3>编辑个人资料</h3></div></div>
+            <form id="profileForm" class="form-grid">
+              <label>显示名称<input id="profileDisplayName" maxlength="40"></label>
+              <label>生日<input id="profileBirthday" type="date"></label>
+              <label class="span-2">个人简介<textarea id="profileBio" maxlength="500" rows="4"></textarea></label>
+              <label>性别<select id="profileGender"><option value="">未设置</option><option value="male">男</option><option value="female">女</option><option value="custom">自定义</option></select></label>
+              <label>自定义性别<input id="profileCustomGender" maxlength="40"></label>
+              <label>生日可见范围<select id="birthdayVisibility"><option value="private">仅自己</option><option value="team">团队可见</option></select></label>
+              <label>性别可见范围<select id="genderVisibility"><option value="private">仅自己</option><option value="team">团队可见</option></select></label>
+              <label class="span-2">联系方式<textarea id="profileContact" maxlength="200" rows="2"></textarea></label>
+              <label>联系方式可见范围<select id="contactVisibility"><option value="private">仅自己</option><option value="team">团队可见</option></select></label>
+              <div class="form-actions span-2"><button class="primary" type="submit">保存资料</button></div>
+            </form>
+            <div class="divider"></div>
+            <form id="emailForm" class="inline-form">
+              <label>登录邮箱<input id="profileEmail" type="email" maxlength="254" placeholder="未绑定"></label>
+              <label>当前密码<input id="emailPassword" type="password" maxlength="128" autocomplete="current-password"></label>
+              <button class="secondary" type="submit">绑定或换绑</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="adminView" class="view">
+        <div class="admin-tabs" id="adminTabs" role="tablist" aria-label="管理功能">
+          <button class="active" data-admin-tab="users" role="tab">账号与权限</button>
+          <button data-admin-tab="assets" role="tab">素材与回收站</button>
+          <button data-admin-tab="luts" role="tab">LUT</button>
+          <button data-admin-tab="tags" role="tab">标签</button>
+          <button data-admin-tab="audit" role="tab">审计记录</button>
+          <button data-admin-tab="settings" role="tab">服务端设置</button>
+        </div>
+        <section id="adminUsersPanel" class="admin-panel">
+          <div class="toolbar"><div><p class="eyebrow">ACCESS CONTROL</p><h3>账号与权限</h3></div><button id="openUserDialog" class="primary">创建账号</button></div>
+          <div class="table-wrap"><table class="admin-user-table"><thead><tr><th>账号</th><th>角色与状态</th><th>权限</th><th>资料状态</th><th>创建时间</th><th class="align-right">操作</th></tr></thead><tbody id="adminUserRows"></tbody></table></div>
+        </section>
+        <section id="adminAssetsPanel" class="admin-panel hidden">
+          <div class="toolbar"><div><p class="eyebrow">SHARED ASSETS</p><h3>素材与回收站</h3></div><div class="segmented" id="adminAssetStateTabs"><button class="active" data-state="active">有效素材</button><button data-state="recycled">回收站</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>素材</th><th>分类</th><th>上传者</th><th>大小</th><th>状态时间</th><th class="align-right">操作</th></tr></thead><tbody id="adminAssetRows"></tbody></table><div id="adminAssetEmpty" class="empty hidden">暂无素材</div></div>
+        </section>
+        <section id="adminLutsPanel" class="admin-panel hidden">
+          <div class="toolbar"><div><p class="eyebrow">TEAM LOOKS</p><h3>团队 LUT</h3></div><div class="segmented" id="adminLutStateTabs"><button class="active" data-state="active">有效 LUT</button><button data-state="recycled">回收站</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>名称</th><th>文件</th><th>上传者</th><th>大小</th><th>时间</th><th class="align-right">操作</th></tr></thead><tbody id="adminLutRows"></tbody></table><div id="adminLutEmpty" class="empty hidden">暂无 LUT</div></div>
+        </section>
+        <section id="adminTagsPanel" class="admin-panel hidden">
+          <div class="toolbar"><div><p class="eyebrow">TAG CATALOG</p><h3>标签管理</h3></div></div>
+          <form id="adminTagCreateForm" class="admin-inline-form admin-tag-form"><label>新标签<input id="adminTagName" maxlength="32" required></label><button class="primary" type="submit">创建标签</button></form>
+          <div class="table-wrap"><table><thead><tr><th>标签</th><th>使用数量</th><th class="align-right">操作</th></tr></thead><tbody id="adminTagRows"></tbody></table><div id="adminTagEmpty" class="empty hidden">暂无标签</div></div>
+        </section>
+        <section id="adminAuditPanel" class="admin-panel hidden">
+          <div class="toolbar"><div><p class="eyebrow">AUDIT TRAIL</p><h3>最近审计记录</h3></div></div>
+          <div class="table-wrap"><table><thead><tr><th>时间</th><th>操作</th><th>对象</th><th>对象 ID</th><th>详情</th></tr></thead><tbody id="adminAuditRows"></tbody></table></div>
+        </section>
+        <section id="adminSettingsPanel" class="admin-panel hidden">
+          <div class="toolbar"><div><p class="eyebrow">RUNTIME POLICY</p><h3>服务端可控设置</h3><p class="muted small">设置会保存到服务端状态并运行时生效。凭据、COS 密钥、密码和令牌不会显示在此页面。</p></div></div>
+          <form id="adminSettingsForm" class="settings-form">
+            <fieldset><legend>存储与上传限制</legend><div class="form-grid">
+              <label>原文件总配额（GiB）<input id="settingQuotaGiB" type="number" min="1" max="102400" step="1" required></label>
+              <label>音频文件上限（GiB）<input id="settingAudioGiB" type="number" min="0.001" max="100" step="0.1" required></label>
+              <label>图片文件上限（GiB）<input id="settingImageGiB" type="number" min="0.001" max="100" step="0.1" required></label>
+              <label>视频文件上限（GiB）<input id="settingVideoGiB" type="number" min="0.001" max="100" step="0.1" required></label>
+              <label>缩略图对象上限（MiB）<input id="settingThumbnailMiB" type="number" min="1" max="102400" step="1" required></label>
+              <label>代理对象上限（GiB）<input id="settingProxyGiB" type="number" min="0.001" max="100" step="0.1" required></label>
+              <label>LUT 文件上限（MiB）<input id="settingLutMiB" type="number" min="1" max="102400" step="1" required></label>
+            </div></fieldset>
+            <fieldset><legend>数据保留与备份</legend><div class="form-grid">
+              <label>回收站保留天数<input id="settingRecycleDays" type="number" min="1" max="3650" required></label>
+              <label>审计记录保留天数<input id="settingAuditDays" type="number" min="1" max="3650" required></label>
+              <label>下载日志保留天数<input id="settingDownloadDays" type="number" min="1" max="3650" required></label>
+              <label class="check-row"><input id="settingBackupsEnabled" type="checkbox">启用数据库备份</label>
+              <label>备份间隔（小时）<input id="settingBackupInterval" type="number" min="1" max="168" required></label>
+              <label>备份保留天数<input id="settingBackupRetention" type="number" min="1" max="3650" required></label>
+              <label>服务器相对备份目录<input id="settingBackupPath" maxlength="260" required></label>
+              <label>COS 备份对象前缀<input id="settingBackupPrefix" maxlength="200" required></label>
+            </div></fieldset>
+            <fieldset><legend>容量告警与预览处理</legend><div class="form-grid">
+              <label>容量警告比例（%）<input id="settingWarningRatio" type="number" min="1" max="100" step="1" required></label>
+              <label>容量临界比例（%）<input id="settingCriticalRatio" type="number" min="1" max="100" step="1" required></label>
+              <label class="check-row"><input id="settingDerivativesEnabled" type="checkbox">启用服务端预览派生任务</label>
+              <label>派生任务轮询间隔（秒）<input id="settingDerivativePoll" type="number" min="5" max="3600" required></label>
+              <label>派生任务超时（秒）<input id="settingDerivativeTimeout" type="number" min="10" max="3600" required></label>
+              <label>缩略图最大边长（像素）<input id="settingThumbnailEdge" type="number" min="64" max="640" required></label>
+            </div></fieldset>
+            <fieldset><legend>登录与会话安全</legend><div class="form-grid">
+              <label>会话有效期（天）<input id="settingSessionDays" type="number" min="1" max="30" required></label>
+              <label>登录失败次数上限<input id="settingLoginLimit" type="number" min="2" max="100" required></label>
+              <label>失败统计窗口（分钟）<input id="settingLoginWindow" type="number" min="1" max="1440" required></label>
+              <label>登录封禁时长（分钟）<input id="settingLoginBlock" type="number" min="1" max="1440" required></label>
+            </div></fieldset>
+            <fieldset><legend>云端传输</legend><div class="form-grid">
+              <label>分片大小（MiB）<input id="settingMultipartMiB" type="number" min="5" max="512" step="1" required></label>
+              <label>上传会话有效期（小时）<input id="settingUploadSessionHours" type="number" min="1" max="168" required></label>
+              <label>COS 临时链接有效期（分钟）<input id="settingSignedUrlMinutes" type="number" min="1" max="60" required></label>
+            </div></fieldset>
+            <div class="form-actions"><button class="secondary" type="button" id="reloadAdminSettings">重新读取</button><button class="primary" type="submit">保存服务端设置</button></div>
+          </form>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="passwordRecommendationDialog" class="dialog">
+    <form method="dialog" class="dialog-body">
+      <p class="eyebrow">ACCOUNT SECURITY</p>
+      <h3>密码安全建议</h3>
+      <p class="muted">首次登录成功。建议尽快在客户端个人资料中修改管理员提供的初始密码。</p>
+      <button class="primary wide" type="submit">知道了</button>
+    </form>
+  </dialog>
+
+  <dialog id="assetDialog" class="dialog">
+    <form id="assetForm" method="dialog" class="dialog-body wide-dialog">
+      <div class="dialog-heading"><div><p class="eyebrow">ASSET METADATA</p><h3>登记素材元数据</h3></div><button class="icon-button close-dialog" type="button" aria-label="关闭">×</button></div>
+      <label class="drop-zone" id="assetDropZone">选择或拖入文件<input id="assetFile" type="file" required></label>
+      <div class="form-grid">
+        <label>素材名称<input id="assetName" maxlength="200" required></label>
+        <label>大类<select id="assetCategoryInput" required><option value="">请选择</option><option value="bgm">BGM</option><option value="sound-effect">音效</option><option value="image">图片</option><option value="video">视频</option></select></label>
+        <label class="span-2">SHA-256<input id="assetContentHash" minlength="64" maxlength="64" pattern="[A-Fa-f0-9]{64}" required></label>
+        <label class="span-2">标签<input id="assetTags" maxlength="500" placeholder="使用逗号分隔"></label>
+        <label class="span-2">备注<textarea id="assetNotes" maxlength="2000" rows="3"></textarea></label>
+      </div>
+      <p id="assetHashStatus" class="muted small"></p>
+      <div class="form-actions"><button class="secondary close-dialog" type="button">取消</button><button class="primary" type="submit">登记</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="userDialog" class="dialog">
+    <form id="userForm" method="dialog" class="dialog-body">
+      <div class="dialog-heading"><div><p class="eyebrow">NEW MEMBER</p><h3>创建团队账号</h3></div><button class="icon-button close-dialog" type="button" aria-label="关闭">×</button></div>
+      <label>用户名<input id="newUsername" maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,31}" required></label>
+      <label>显示名称<input id="newDisplayName" maxlength="40"></label>
+      <label>初始密码<input id="newTemporaryPassword" type="password" minlength="8" maxlength="128" required></label>
+      <p class="muted small">8 至 128 位，且至少包含大写字母、小写字母、数字、特殊符号中的两种。</p>
+      <label class="check-row"><input id="newIsAdmin" type="checkbox">管理员账号</label>
+      <div class="form-actions"><button class="secondary close-dialog" type="button">取消</button><button class="primary" type="submit">创建账号</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="adminUserDialog" class="dialog admin-user-dialog">
+    <div class="dialog-body wide-dialog">
+      <div class="dialog-heading"><div><p class="eyebrow">ACCOUNT CONTROL</p><h3 id="adminUserDialogTitle">管理账号</h3><p id="adminUserDialogMeta" class="muted small"></p></div><button class="icon-button close-dialog" type="button" aria-label="关闭">×</button></div>
+
+      <section class="admin-user-section">
+        <div class="section-copy"><h4>登录用户名</h4></div>
+        <form id="adminUsernameForm" class="admin-inline-form">
+          <label>用户名<input id="adminUsername" maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,31}" required></label>
+          <button class="secondary" type="submit">保存用户名</button>
+        </form>
+      </section>
+
+      <section class="admin-user-section">
+        <div class="section-copy"><h4>角色与权限</h4></div>
+        <form id="adminPermissionsForm">
+          <label class="check-row role-toggle"><input id="adminIsAdmin" type="checkbox"><span><strong>管理员角色</strong></span></label>
+          <fieldset class="permission-fieldset"><legend>12 个现有权限位</legend><div id="adminPermissionGrid" class="permission-grid"></div></fieldset>
+          <div class="form-actions"><button class="secondary" type="submit">确认保存角色与权限</button></div>
+        </form>
+      </section>
+
+      <section class="admin-user-section">
+        <div class="section-copy"><h4>资料清理</h4></div>
+        <div class="binding-actions">
+          <div><span>附属登录邮箱</span><strong id="adminEmailStatus">—</strong><button id="clearAdminEmail" class="danger-button" type="button">清除绑定</button></div>
+          <div><span>头像</span><strong id="adminAvatarStatus">—</strong><button id="clearAdminAvatar" class="danger-button" type="button">清除头像</button></div>
+        </div>
+        <form id="adminProfileClearForm">
+          <fieldset class="permission-fieldset"><legend>按字段清理公开资料</legend><div id="adminProfileFieldGrid" class="permission-grid profile-field-grid"></div></fieldset>
+          <div class="form-actions"><button class="danger-button" type="submit">清理已选公开资料</button></div>
+        </form>
+      </section>
+
+      <div class="form-actions"><button class="secondary close-dialog" type="button">关闭</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="userProfileDialog" class="dialog">
+    <div class="dialog-body wide-dialog">
+      <div class="dialog-heading"><div><p class="eyebrow">MEMBER PROFILE</p><h3 id="userProfileTitle">成员资料</h3></div><button class="icon-button close-dialog" type="button" aria-label="关闭">×</button></div>
+      <div id="userProfileContent"></div>
+    </div>
+  </dialog>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite"></div>
+  <script src="/avatar-validation.js" defer></script>
+  <script src="/admin-user-management.js" defer></script>
+  <script src="/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\InternalAssetLibrary.Contracts\InternalAssetLibrary.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\InternalAssetLibrary.Core\InternalAssetLibrary.Core.csproj" />
+    <ProjectReference Include="..\..\src\InternalAssetLibrary.Client.Core\InternalAssetLibrary.Client.Core.csproj" />
+    <ProjectReference Include="..\..\src\InternalAssetLibrary.Server\InternalAssetLibrary.Server.csproj" />
+    <ProjectReference Include="..\..\src\InternalAssetLibrary.Updater\InternalAssetLibrary.Updater.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

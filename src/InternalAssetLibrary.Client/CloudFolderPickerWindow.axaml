@@ -1,0 +1,68 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:InternalAssetLibrary.Client.ViewModels"
+        x:Class="InternalAssetLibrary.Client.CloudFolderPickerWindow"
+        Width="520"
+        Height="560"
+        MinWidth="420"
+        MinHeight="420"
+        CanResize="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Title="选择云端文件夹"
+        TransparencyLevelHint="Mica, AcrylicBlur, None">
+  <Border Margin="12"
+          Padding="20"
+          CornerRadius="8"
+          Background="{DynamicResource SurfaceBrush}"
+          BorderBrush="{DynamicResource BorderBrush}"
+          BorderThickness="1">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+      <TextBlock x:Name="TitleText"
+                 Text="选择云端文件夹"
+                 Classes="sectionTitle" />
+      <TextBlock x:Name="DescriptionText"
+                 Grid.Row="1"
+                 Margin="0,6,0,14"
+                 Text="选择目标目录；根目录表示不放入任何文件夹。"
+                 Classes="muted"
+                 TextWrapping="Wrap" />
+
+      <ListBox x:Name="FolderList"
+               Grid.Row="2"
+               ItemsSource="{Binding Choices}"
+               SelectionChanged="FolderList_OnSelectionChanged"
+               DoubleTapped="FolderList_OnDoubleTapped">
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="{x:Type vm:CloudFolderChoiceViewModel}">
+            <Grid MinHeight="42" ColumnDefinitions="Auto,*" Margin="4,2">
+              <PathIcon Width="18"
+                        Height="18"
+                        VerticalAlignment="Center"
+                        Foreground="{DynamicResource AccentBrush}"
+                        Data="M3,5 L9,5 L11,7 L21,7 L21,19 L3,19 Z" />
+              <TextBlock Grid.Column="1"
+                         Margin="10,0,0,0"
+                         VerticalAlignment="Center"
+                         Text="{Binding DisplayPath}"
+                         TextTrimming="CharacterEllipsis" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+      <StackPanel Grid.Row="3"
+                  Margin="0,16,0,0"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  Spacing="8">
+        <Button Classes="quiet" Click="Cancel_OnClick">取消</Button>
+        <Button x:Name="ConfirmButton"
+                Classes="accent"
+                MinWidth="110"
+                IsEnabled="False"
+                Click="Confirm_OnClick">选择</Button>
+      </StackPanel>
+    </Grid>
+  </Border>
+</Window>

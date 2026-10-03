@@ -1,0 +1,30 @@
+name: internal-asset-library
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    image: internal-asset-library-server:1.2.0
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Storage__MetadataProvider: sqlite
+      Storage__ObjectProvider: cos
+      Sqlite__DatabasePath: /data/library.db
+      Backups__LocalPath: /data/backups
+      ClientUpdates__ManifestPath: /updates/latest.json
+      Http__KnownProxy: ${KNOWN_PROXY:-}
+    ports:
+      - "127.0.0.1:5019:8080"
+    volumes:
+      - ial-data:/data
+      - ./updates:/updates:ro
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+volumes:
+  ial-data:

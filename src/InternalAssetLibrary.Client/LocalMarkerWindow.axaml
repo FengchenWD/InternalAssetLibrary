@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:InternalAssetLibrary.Client"
+        x:Class="InternalAssetLibrary.Client.LocalMarkerWindow"
+        Title="本地素材标记"
+        Width="900"
+        Height="650"
+        MinWidth="760"
+        MinHeight="540"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBackgroundBrush}">
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="22">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel>
+        <TextBlock x:Name="AssetNameText" Classes="pageTitle" FontSize="21" />
+        <TextBlock Text="标记集与九列 CSV" Classes="muted" Margin="0,4,0,0" />
+      </StackPanel>
+      <Button Grid.Column="1" Classes="quiet" Click="Close_OnClick">关闭</Button>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,20,0,14">
+      <ComboBox x:Name="MarkerSetPicker"
+                ItemsSource="{Binding MarkerSets}"
+                SelectionChanged="MarkerSetPicker_OnSelectionChanged">
+        <ComboBox.ItemTemplate>
+          <DataTemplate DataType="{x:Type local:LocalMarkerSetOption}">
+            <TextBlock Text="{Binding DisplayLabel}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <Button Grid.Column="1" Classes="quiet" Click="NewSet_OnClick">新建</Button>
+      <Button Grid.Column="2" Classes="quiet" Click="RenameSet_OnClick">重命名</Button>
+      <Button Grid.Column="3" Classes="quiet" Click="Import_OnClick">导入 CSV</Button>
+      <Button Grid.Column="4" Classes="quiet" Click="Export_OnClick">导出 CSV</Button>
+      <Button Grid.Column="5" Classes="quiet" Click="DeleteSet_OnClick">删除标记集</Button>
+    </Grid>
+
+    <Border Grid.Row="2"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+      <Grid RowDefinitions="42,*">
+        <Grid ColumnDefinitions="120,210,*" Margin="14,0">
+          <TextBlock Text="时间" VerticalAlignment="Center" Classes="muted" />
+          <TextBlock Grid.Column="1" Text="标记名称" VerticalAlignment="Center" Classes="muted" />
+          <TextBlock Grid.Column="2" Text="备注" VerticalAlignment="Center" Classes="muted" />
+        </Grid>
+        <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+          <Grid>
+            <ListBox x:Name="MarkerList"
+                     ItemsSource="{Binding Markers}"
+                     SelectionChanged="MarkerList_OnSelectionChanged"
+                     Background="Transparent"
+                     BorderThickness="0">
+              <ListBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type local:LocalMarkerRow}">
+                  <Grid ColumnDefinitions="120,210,*" Margin="8,7">
+                    <TextBlock Text="{Binding TimeLabel}" />
+                    <TextBlock Grid.Column="1" Text="{Binding NameLabel}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" Text="{Binding NoteLabel}" TextTrimming="CharacterEllipsis" Classes="muted" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock x:Name="EmptyMarkersText"
+                       Text="当前标记集还没有标记"
+                       Classes="muted"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="3" RowDefinitions="Auto,Auto" Margin="0,14,0,0">
+      <Grid ColumnDefinitions="140,220,*" ColumnSpacing="10">
+        <StackPanel>
+          <TextBlock Text="时间（HH:mm:ss）" Classes="muted" Margin="0,0,0,5" />
+          <TextBox x:Name="MarkerTimeBox" Watermark="00:00:00" />
+        </StackPanel>
+        <StackPanel Grid.Column="1">
+          <TextBlock Text="标记名称" Classes="muted" Margin="0,0,0,5" />
+          <TextBox x:Name="MarkerNameBox" MaxLength="200" />
+        </StackPanel>
+        <StackPanel Grid.Column="2">
+          <TextBlock Text="备注" Classes="muted" Margin="0,0,0,5" />
+          <TextBox x:Name="MarkerNoteBox" MaxLength="1000" />
+        </StackPanel>
+      </Grid>
+      <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,12,0,0">
+        <TextBlock x:Name="StatusText" VerticalAlignment="Center" Classes="muted" TextWrapping="Wrap" />
+        <Button Grid.Column="1" Classes="quiet" Click="ClearEditor_OnClick">清空</Button>
+        <Button Grid.Column="2" Classes="quiet" Click="DeleteMarker_OnClick">删除选中</Button>
+        <Button x:Name="SaveMarkerButton" Grid.Column="3" Classes="accent" Click="SaveMarker_OnClick">添加标记</Button>
+      </Grid>
+    </Grid>
+  </Grid>
+</Window>

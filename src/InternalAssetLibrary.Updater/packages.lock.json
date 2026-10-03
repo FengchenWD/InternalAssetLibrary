@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "internalassetlibrary.contracts": {
+        "type": "Project"
+      },
+      "internalassetlibrary.core": {
+        "type": "Project",
+        "dependencies": {
+          "InternalAssetLibrary.Contracts": "[1.0.0, )"
+        }
+      }
+    }
+  }
+}

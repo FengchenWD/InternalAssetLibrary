@@ -1,0 +1,89 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:InternalAssetLibrary.Client.Controls"
+             x:Class="InternalAssetLibrary.Client.Controls.EditorWorkspaceView"
+             Focusable="True"
+             DragDrop.AllowDrop="True"
+             DragDrop.DragOver="Workspace_OnDragOver"
+             DragDrop.Drop="Workspace_OnDrop"
+             KeyDown="Workspace_OnKeyDown">
+  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10" MinHeight="480">
+    <Border Classes="glass" Padding="10">
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+        <Button Classes="accent" Click="OpenVideo_OnClick">打开视频或音频</Button>
+        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+          <TextBlock x:Name="SourceNameText" Text="未选择视频" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+          <TextBlock x:Name="StatusText" Text="编辑器只处理一个本地视频，不保存工程文件" Classes="muted" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+        <Button Grid.Column="2" Classes="accent" Click="ExportVideo_OnClick">导出</Button>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,260,72" ColumnSpacing="10">
+      <Border Classes="glass" Padding="10" ClipToBounds="True">
+      <Grid RowDefinitions="*,Auto" RowSpacing="8">
+          <Border Background="#080B0E" CornerRadius="6" ClipToBounds="True">
+            <Grid>
+              <controls:MpvVideoHost x:Name="VideoHost" />
+              <TextBlock x:Name="EmptyPreviewText" Text="打开一个本地视频开始处理" Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+          <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
+            <Button Width="56" Classes="accent" Click="PlayPause_OnClick">播放</Button>
+            <Button Grid.Column="1" Width="56" Classes="quiet" Click="Stop_OnClick">停止</Button>
+            <Slider x:Name="PreviewSlider" Grid.Column="2" Minimum="0" Maximum="1" ValueChanged="PreviewSlider_OnChanged" />
+            <TextBlock x:Name="TimeText" Grid.Column="3" MinWidth="170" Text="00:00:00.000 / 00:00:00.000" TextAlignment="Right" Classes="muted" VerticalAlignment="Center" />
+          </Grid>
+        </Grid>
+      </Border>
+
+      <Border Grid.Column="1" Classes="glass" Padding="12">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="10">
+          <TextBlock Text="视频处理" Classes="sectionTitle" />
+          <TextBlock Grid.Row="1" Text="入点 / 出点" Classes="muted" />
+          <Canvas x:Name="TrimRangeCanvas" Grid.Row="2" Height="42" IsVisible="False" Background="{DynamicResource SurfaceRaisedBrush}" PointerPressed="TrimRange_OnPointerPressed" PointerMoved="TrimRange_OnPointerMoved" PointerReleased="TrimRange_OnPointerReleased">
+            <Border x:Name="TrimRangeSelection" Height="24" Canvas.Top="9" Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="4" />
+            <Border x:Name="TrimInHandle" Width="8" Height="32" Canvas.Top="5" Background="{DynamicResource AccentBrush}" CornerRadius="3" />
+            <Border x:Name="TrimOutHandle" Width="8" Height="32" Canvas.Top="5" Background="{DynamicResource AccentBrush}" CornerRadius="3" />
+          </Canvas>
+          <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+            <Button Classes="quiet" Click="SetInPoint_OnClick">设置入点</Button>
+            <TextBlock Grid.Column="1" x:Name="TrimSummaryText" Text="未设置入出点" Classes="muted" VerticalAlignment="Center" TextAlignment="Center" />
+            <Button Grid.Column="2" Classes="quiet" Click="SetOutPoint_OnClick">设置出点</Button>
+          </Grid>
+          <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+            <TextBlock Text="整段音量" Classes="muted" VerticalAlignment="Center" />
+            <Slider x:Name="VolumeSlider" Grid.Column="1" Minimum="-60" Maximum="12" Value="0" TickFrequency="1" ValueChanged="VolumeSlider_OnChanged" />
+            <TextBox x:Name="VolumeInput" Grid.Column="2" Width="72" Text="0" TextAlignment="Right" TextChanged="VolumeInput_OnChanged" LostFocus="VolumeInput_OnLostFocus" />
+            <TextBlock Grid.Column="3" Text="dB（-60 至 +12）" Classes="muted" VerticalAlignment="Center" />
+          </Grid>
+          <TextBlock Grid.Row="5" Text="入点和出点只影响导出范围；音量调整会写入导出文件。" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Top" />
+          <TextBlock Grid.Row="6" x:Name="MediaInfoText" Text="" Classes="muted" TextWrapping="Wrap" />
+        </Grid>
+      </Border>
+
+      <Border Grid.Column="2" Classes="glass" Padding="5">
+        <controls:EditorLevelMeter x:Name="LevelMeter" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+      </Border>
+    </Grid>
+
+    <Border Grid.Row="2" Classes="glass" Padding="10">
+      <Grid RowDefinitions="Auto,104" RowSpacing="6">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+          <TextBlock Text="单条主轨" FontWeight="SemiBold" />
+          <TextBlock Grid.Column="1" Text="主轨中拖动两端调整裁剪范围，点击空白处移动播放头" Classes="muted" />
+          <TextBlock Grid.Column="2" x:Name="TimelineTimeText" Text="00:00:00.000" Classes="muted" />
+        </Grid>
+        <Border Grid.Row="1" Height="104" Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="5" Padding="0">
+          <Canvas x:Name="TimelineCanvas" Height="104" Background="Transparent" PointerPressed="Timeline_OnPointerPressed" PointerMoved="Timeline_OnPointerMoved" PointerReleased="Timeline_OnPointerReleased">
+            <Image x:Name="TimelineFilmstrip" Height="72" Canvas.Top="16" Stretch="Fill" IsVisible="False" IsHitTestVisible="False" Opacity="0.96" ZIndex="0" />
+            <Border x:Name="TimelineClipBar" Background="{DynamicResource AccentSoftBrush}" Opacity="0.18" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="4" Height="72" Canvas.Top="16" ZIndex="1" />
+            <Border x:Name="TimelineInHandle" Width="10" Height="88" Canvas.Top="8" Background="{DynamicResource AccentBrush}" CornerRadius="4" IsVisible="False" ZIndex="2" />
+            <Border x:Name="TimelineOutHandle" Width="10" Height="88" Canvas.Top="8" Background="{DynamicResource AccentBrush}" CornerRadius="4" IsVisible="False" ZIndex="2" />
+            <Border x:Name="TimelinePlayhead" Background="{DynamicResource PrimaryTextBrush}" Width="2" Height="104" Canvas.Top="0" ZIndex="3" />
+          </Canvas>
+        </Border>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

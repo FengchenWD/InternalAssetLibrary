@@ -1,0 +1,244 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:InternalAssetLibrary.Client"
+        x:Class="InternalAssetLibrary.Client.PlayerQueueAddWindow"
+        x:DataType="local:PlayerQueueAddWindow"
+        Title="加入播放队列"
+        Width="920"
+        Height="700"
+        MinWidth="600"
+        MinHeight="520"
+        CanResize="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBackgroundBrush}"
+        TransparencyLevelHint="Mica, AcrylicBlur, None">
+  <Window.Styles>
+    <Style Selector="ToggleButton.queueAssetChoice">
+      <Setter Property="MinHeight" Value="68" />
+      <Setter Property="Margin" Value="0,0,0,7" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="ToggleButton.queueAssetChoice:pointerover">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.queueAssetChoice:checked">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="24" RowSpacing="14">
+    <StackPanel>
+      <TextBlock Text="加入播放队列" Classes="pageTitle" FontSize="22" />
+      <TextBlock Text="链接电脑中的媒体文件，或从已经索引的本地素材库中选择。原文件不会被复制。"
+                 Classes="muted"
+                 Margin="0,6,0,0"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <Border Grid.Row="1" Classes="glass" Padding="14">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="电脑中的文件" FontWeight="SemiBold" />
+          <TextBlock Text="打开系统文件选择器，可一次选择多个媒体文件。"
+                     Classes="muted"
+                     Margin="0,3,0,0"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+        <Button Grid.Column="1"
+                Classes="accent"
+                VerticalAlignment="Center"
+                Click="ChooseComputerFiles_OnClick">选择文件</Button>
+      </Grid>
+    </Border>
+
+    <Border Grid.Row="2" Classes="glass" Padding="12" ClipToBounds="True">
+      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+          <StackPanel>
+            <TextBlock Text="本地素材库" Classes="sectionTitle" />
+            <TextBlock Text="按连接目录查找素材，单击素材即可选中或取消。"
+                       Classes="muted"
+                       Margin="0,3,0,0"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+          <TextBlock x:Name="SelectionSummaryText"
+                     Grid.Column="1"
+                     Text="未选择素材"
+                     Classes="muted"
+                     VerticalAlignment="Center" />
+        </Grid>
+
+        <TextBox x:Name="SearchBox"
+                 Grid.Row="1"
+                 Watermark="搜索文件名、路径或格式"
+                 TextChanged="SearchBox_OnTextChanged" />
+
+        <Grid x:Name="LibraryBodyGrid"
+              Grid.Row="2"
+              ColumnDefinitions="220,*">
+          <Border x:Name="LibraryFolderPane"
+                  Margin="0,0,10,0"
+                  Padding="8"
+                  CornerRadius="8"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="1"
+                  Background="{DynamicResource PageBackgroundBrush}"
+                  ClipToBounds="True">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="6">
+              <StackPanel Margin="8,5,8,4">
+                <TextBlock Text="素材文件夹" FontWeight="SemiBold" />
+                <TextBlock Text="本地索引目录" Classes="muted" FontSize="10" Margin="0,2,0,0" />
+              </StackPanel>
+
+              <Button x:Name="AllFoldersButton"
+                      Grid.Row="1"
+                      Classes="contextNav selected"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Stretch"
+                      Click="AllFolders_OnClick">
+                <Grid ColumnDefinitions="24,*,Auto" ColumnSpacing="7">
+                  <PathIcon Width="17"
+                            Height="17"
+                            VerticalAlignment="Center"
+                            Data="M3,5 L9,5 L11,7 L21,7 L21,19 L3,19 Z" />
+                  <TextBlock Grid.Column="1"
+                             Text="全部文件夹"
+                             VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock x:Name="AllFolderCountText"
+                             Grid.Column="2"
+                             Classes="muted"
+                             FontSize="10"
+                             VerticalAlignment="Center" />
+                </Grid>
+              </Button>
+
+              <ScrollViewer Grid.Row="2"
+                            HorizontalScrollBarVisibility="Disabled"
+                            VerticalScrollBarVisibility="Auto">
+                <TreeView x:Name="FolderTree"
+                          ItemsSource="{Binding FolderNodes}"
+                          SelectionChanged="FolderTree_OnSelectionChanged">
+                  <TreeView.ItemTemplate>
+                    <TreeDataTemplate DataType="{x:Type local:PlayerQueueFolderOption}"
+                                      ItemsSource="{Binding Children}">
+                      <Grid ColumnDefinitions="20,*,Auto"
+                            MinHeight="28"
+                            ToolTip.Tip="{Binding FullPath}"
+                            ToolTip.ShowDelay="250">
+                        <PathIcon Width="15"
+                                  Height="15"
+                                  VerticalAlignment="Center"
+                                  Data="M3,5 L9,5 L11,7 L21,7 L21,19 L3,19 Z" />
+                        <TextBlock Grid.Column="1"
+                                   Margin="5,0,0,0"
+                                   Text="{Binding DisplayName}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2"
+                                   Margin="7,0,0,0"
+                                   Text="{Binding AssetCountLabel}"
+                                   Classes="muted"
+                                   FontSize="10"
+                                   VerticalAlignment="Center" />
+                      </Grid>
+                    </TreeDataTemplate>
+                  </TreeView.ItemTemplate>
+                </TreeView>
+              </ScrollViewer>
+            </Grid>
+          </Border>
+
+          <Border x:Name="LibraryAssetPane"
+                  Grid.Column="1"
+                  Padding="8"
+                  CornerRadius="8"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="1"
+                  Background="{DynamicResource PageBackgroundBrush}"
+                  ClipToBounds="True">
+            <Grid RowDefinitions="Auto,*" RowSpacing="6">
+              <TextBlock x:Name="ResultSummaryText"
+                         Margin="6,3,6,2"
+                         Classes="muted"
+                         FontSize="11" />
+
+              <Grid Grid.Row="1">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                  <ItemsControl ItemsSource="{Binding Assets}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:PlayerQueueAssetOption">
+                        <ToggleButton Classes="queueAssetChoice"
+                                      IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                      Click="AssetOption_OnClick"
+                                      ToolTip.Tip="{Binding FullPath}"
+                                      ToolTip.ShowDelay="250">
+                          <Grid ColumnDefinitions="4,*,Auto" ColumnSpacing="12">
+                            <Border Width="4"
+                                    CornerRadius="2"
+                                    Background="{DynamicResource AccentBrush}"
+                                    IsVisible="{Binding IsSelected}" />
+                            <StackPanel Grid.Column="1"
+                                        Margin="2,10,0,10"
+                                        Spacing="3"
+                                        VerticalAlignment="Center">
+                              <TextBlock Text="{Binding Name}"
+                                         FontWeight="SemiBold"
+                                         TextTrimming="CharacterEllipsis" />
+                              <TextBlock Text="{Binding FullPath}"
+                                         Classes="muted"
+                                         FontSize="11"
+                                         TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <Border Grid.Column="2"
+                                    Margin="0,0,12,0"
+                                    Padding="8,4"
+                                    CornerRadius="7"
+                                    Background="{DynamicResource AccentSoftBrush}"
+                                    VerticalAlignment="Center">
+                              <TextBlock Text="{Binding TypeLabel}"
+                                         Foreground="{DynamicResource AccentBrush}"
+                                         FontSize="11" />
+                            </Border>
+                          </Grid>
+                        </ToggleButton>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+
+                <TextBlock x:Name="EmptyStateText"
+                           Text="本地素材库中没有可加入队列的素材"
+                           Classes="muted"
+                           Margin="20"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap" />
+              </Grid>
+            </Grid>
+          </Border>
+        </Grid>
+      </Grid>
+    </Border>
+
+    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Classes="quiet" Click="Cancel_OnClick">取消</Button>
+      <Button x:Name="AddSelectedButton"
+              Classes="accent"
+              IsEnabled="False"
+              Click="AddSelected_OnClick">加入已选素材</Button>
+    </StackPanel>
+  </Grid>
+</Window>

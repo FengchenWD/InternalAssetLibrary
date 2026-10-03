@@ -1,0 +1,159 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="InternalAssetLibrary.Client.Controls.AdminWorkspaceView">
+  <Grid RowDefinitions="Auto,*" RowSpacing="16">
+    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+      <StackPanel>
+        <TextBlock Text="管理后台" Classes="pageTitle" />
+        <TextBlock Text="账号、内容、审计与服务端运行设置" Classes="muted" Margin="0,4,0,0" />
+      </StackPanel>
+      <Button Grid.Column="1" Classes="quiet" Click="RefreshAll_OnClick">刷新</Button>
+      <Button Grid.Column="2" Classes="accent" Click="OpenWebAdmin_OnClick">网页管理后台</Button>
+    </Grid>
+
+    <TabControl x:Name="AdminTabs" Grid.Row="1">
+      <TabItem Header="概览">
+        <ScrollViewer Margin="0,16,0,0">
+          <StackPanel Spacing="16">
+            <TextBlock x:Name="AdminStatusText" Text="正在读取管理数据…" Classes="muted" TextWrapping="Wrap" />
+            <WrapPanel>
+              <Button Width="250" Height="92" Margin="0,0,12,12" Padding="16" HorizontalContentAlignment="Stretch" Classes="quiet" Tag="1" Click="SelectAdminTab_OnClick">
+                <StackPanel><TextBlock Text="账号与权限" FontWeight="SemiBold" FontSize="15" /><TextBlock x:Name="AdminUserCountText" Text="读取团队账号" Classes="muted" Margin="0,5,0,0" /></StackPanel>
+              </Button>
+              <Button Width="250" Height="92" Margin="0,0,12,12" Padding="16" HorizontalContentAlignment="Stretch" Classes="quiet" Tag="shared" Click="NavigateModule_OnClick">
+                <StackPanel><TextBlock Text="素材与文件夹" FontWeight="SemiBold" FontSize="15" /><TextBlock Text="进入共享素材进行管理" Classes="muted" Margin="0,5,0,0" /></StackPanel>
+              </Button>
+              <Button Width="250" Height="92" Margin="0,0,12,12" Padding="16" HorizontalContentAlignment="Stretch" Classes="quiet" Tag="recycle" Click="NavigateModule_OnClick">
+                <StackPanel><TextBlock Text="回收站" FontWeight="SemiBold" FontSize="15" /><TextBlock Text="查看当前账号回收内容" Classes="muted" Margin="0,5,0,0" /></StackPanel>
+              </Button>
+              <Button Width="250" Height="92" Margin="0,0,12,12" Padding="16" HorizontalContentAlignment="Stretch" Classes="quiet" Tag="luts" Click="NavigateModule_OnClick">
+                <StackPanel><TextBlock Text="团队 LUT" FontWeight="SemiBold" FontSize="15" /><TextBlock Text="进入共享 LUT 管理" Classes="muted" Margin="0,5,0,0" /></StackPanel>
+              </Button>
+              <Button Width="250" Height="92" Margin="0,0,12,12" Padding="16" HorizontalContentAlignment="Stretch" Classes="quiet" Tag="shared" Click="NavigateModule_OnClick">
+                <StackPanel><TextBlock Text="团队标签" FontWeight="SemiBold" FontSize="15" /><TextBlock Text="在共享素材中维护标签" Classes="muted" Margin="0,5,0,0" /></StackPanel>
+              </Button>
+              <Button Width="250" Height="92" Margin="0,0,12,12" Padding="16" HorizontalContentAlignment="Stretch" Classes="quiet" Tag="2" Click="SelectAdminTab_OnClick">
+                <StackPanel><TextBlock Text="审计记录" FontWeight="SemiBold" FontSize="15" /><TextBlock x:Name="AdminAuditCountText" Text="读取最近操作" Classes="muted" Margin="0,5,0,0" /></StackPanel>
+              </Button>
+              <Button Width="250" Height="92" Margin="0,0,12,12" Padding="16" HorizontalContentAlignment="Stretch" Classes="quiet" Tag="3" Click="SelectAdminTab_OnClick">
+                <StackPanel><TextBlock Text="服务端设置" FontWeight="SemiBold" FontSize="15" /><TextBlock Text="非敏感设置直接生效" Classes="muted" Margin="0,5,0,0" /></StackPanel>
+              </Button>
+            </WrapPanel>
+            <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14">
+              <TextBlock Text="COS SecretId、SecretKey、登录密码、Token 和签名地址不会在客户端管理后台显示。" Classes="muted" TextWrapping="Wrap" />
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="账号与权限">
+        <Grid Margin="0,16,0,0" RowDefinitions="Auto,*" RowSpacing="12">
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <TextBlock Text="团队账号" Classes="sectionTitle" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="quiet" Click="RefreshUsers_OnClick">刷新账号</Button>
+            <Button Grid.Column="2" Classes="accent" Click="CreateUser_OnClick">新建账号</Button>
+          </Grid>
+          <ScrollViewer Grid.Row="1">
+            <ItemsControl ItemsSource="{Binding AdminUsers}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Margin="0,0,0,8" Padding="12" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6">
+                    <Grid ColumnDefinitions="220,120,*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+                      <StackPanel><TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" /><TextBlock Text="{Binding Username}" Classes="muted" /></StackPanel>
+                      <StackPanel Grid.Column="1"><TextBlock Text="{Binding RoleLabel}" /><TextBlock Text="{Binding StatusLabel}" Classes="muted" /></StackPanel>
+                      <TextBlock Grid.Column="2" Text="{Binding PermissionSummary}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                      <Button Grid.Column="3" Classes="quiet" Padding="10,5" Click="EditUser_OnClick">编辑</Button>
+                      <Button Grid.Column="4" Classes="quiet" Padding="10,5" Click="ToggleUserStatus_OnClick" Content="{Binding StatusActionLabel}" />
+                      <Button Grid.Column="5" Classes="quiet" Padding="10,5" Click="ResetUserPassword_OnClick">重置密码</Button>
+                      <Button Grid.Column="6" Classes="quiet" Padding="10,5" Click="DeleteUser_OnClick">删除</Button>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="审计记录">
+        <Grid Margin="0,16,0,0" RowDefinitions="Auto,*" RowSpacing="12">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="最近 200 条服务端审计记录" Classes="sectionTitle" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="quiet" Click="RefreshAudit_OnClick">刷新记录</Button>
+          </Grid>
+          <ScrollViewer Grid.Row="1">
+            <ItemsControl ItemsSource="{Binding AdminAuditItems}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="160,250,220,*" Margin="0,0,0,8">
+                    <TextBlock Text="{Binding TimeLabel}" Classes="muted" />
+                    <TextBlock Grid.Column="1" Text="{Binding ActionLabel}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" Text="{Binding TargetLabel}" Classes="muted" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="3" Text="{Binding DetailLabel}" Classes="muted" TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="服务端设置">
+        <ScrollViewer Margin="0,16,0,0">
+          <StackPanel Spacing="16">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+              <TextBlock Text="所有允许管理员在线修改的非敏感设置" Classes="sectionTitle" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Classes="quiet" Click="ReloadSettings_OnClick">重新读取</Button>
+              <Button Grid.Column="2" Classes="accent" Click="SaveSettings_OnClick">保存并应用</Button>
+            </Grid>
+            <TextBlock x:Name="SettingsStatusText" Classes="muted" TextWrapping="Wrap" />
+
+            <TextBlock Text="容量与上传限制" Classes="sectionTitle" />
+            <WrapPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="原始素材总配额（GiB）" Classes="muted" /><TextBox x:Name="OriginalQuotaBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="音频文件上限（MiB）" Classes="muted" /><TextBox x:Name="AudioMaxBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="图片文件上限（MiB）" Classes="muted" /><TextBox x:Name="ImageMaxBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="视频文件上限（GiB）" Classes="muted" /><TextBox x:Name="VideoMaxBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="缩略图对象上限（MiB）" Classes="muted" /><TextBox x:Name="ThumbnailMaxBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="代理对象上限（GiB）" Classes="muted" /><TextBox x:Name="ProxyMaxBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="LUT 文件上限（MiB）" Classes="muted" /><TextBox x:Name="LutMaxBox" /></StackPanel>
+            </WrapPanel>
+
+            <TextBlock Text="保留与备份" Classes="sectionTitle" />
+            <WrapPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="回收站保留天数" Classes="muted" /><TextBox x:Name="RecycleDaysBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="审计记录保留天数" Classes="muted" /><TextBox x:Name="AuditDaysBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="下载日志保留天数" Classes="muted" /><TextBox x:Name="DownloadDaysBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="备份间隔（小时）" Classes="muted" /><TextBox x:Name="BackupIntervalBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="备份保留天数" Classes="muted" /><TextBox x:Name="BackupRetentionBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="服务器相对备份目录" Classes="muted" /><TextBox x:Name="BackupPathBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="COS 备份对象前缀" Classes="muted" /><TextBox x:Name="BackupPrefixBox" /></StackPanel>
+              <CheckBox x:Name="BackupsEnabledBox" Width="250" Margin="0,20,12,12" Content="启用数据库备份" />
+            </WrapPanel>
+
+            <TextBlock Text="容量告警与预览处理" Classes="sectionTitle" />
+            <WrapPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="容量警告比例（%）" Classes="muted" /><TextBox x:Name="WarningRatioBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="容量临界比例（%）" Classes="muted" /><TextBox x:Name="CriticalRatioBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="派生任务轮询间隔（秒）" Classes="muted" /><TextBox x:Name="DerivativePollBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="派生任务超时（秒）" Classes="muted" /><TextBox x:Name="DerivativeTimeoutBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="缩略图最大边长（像素）" Classes="muted" /><TextBox x:Name="ThumbnailEdgeBox" /></StackPanel>
+              <CheckBox x:Name="DerivativesEnabledBox" Width="250" Margin="0,20,12,12" Content="启用服务端预览派生任务" />
+            </WrapPanel>
+
+            <TextBlock Text="登录与云端传输" Classes="sectionTitle" />
+            <WrapPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="会话有效期（天）" Classes="muted" /><TextBox x:Name="SessionDaysBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="登录失败次数上限" Classes="muted" /><TextBox x:Name="LoginLimitBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="失败统计窗口（分钟）" Classes="muted" /><TextBox x:Name="LoginWindowBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="登录封禁时长（分钟）" Classes="muted" /><TextBox x:Name="LoginBlockBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="分片大小（MiB）" Classes="muted" /><TextBox x:Name="MultipartSizeBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="上传会话有效期（小时）" Classes="muted" /><TextBox x:Name="UploadSessionBox" /></StackPanel>
+              <StackPanel Width="250" Margin="0,0,12,12"><TextBlock Text="COS 临时链接有效期（分钟）" Classes="muted" /><TextBox x:Name="SignedUrlBox" /></StackPanel>
+            </WrapPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
+  </Grid>
+</UserControl>

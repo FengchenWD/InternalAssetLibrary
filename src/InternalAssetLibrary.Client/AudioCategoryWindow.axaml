@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="InternalAssetLibrary.Client.AudioCategoryWindow"
+        Title="修改音频分类"
+        Width="460"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBackgroundBrush}">
+  <Grid RowDefinitions="Auto,Auto,Auto" Margin="24" RowSpacing="18">
+    <StackPanel>
+      <TextBlock Text="修改音频分类" Classes="sectionTitle" />
+      <TextBlock Text="仅修改素材元数据，不会更改原文件、标签、备注或标记。"
+                 Classes="muted"
+                 Margin="0,5,0,0"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+    <ComboBox x:Name="CategoryPicker" Grid.Row="1">
+      <ComboBoxItem Content="BGM" />
+      <ComboBoxItem Content="音效" />
+    </ComboBox>
+    <StackPanel Grid.Row="2"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="8">
+      <Button Classes="quiet" Click="Cancel_OnClick">取消</Button>
+      <Button Classes="accent" Click="Confirm_OnClick">保存分类</Button>
+    </StackPanel>
+  </Grid>
+</Window>

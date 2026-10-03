@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "runtimeIdentifier": "win-x64",
+  "files": {
+    "libmpv-2.dll": {
+      "sha256": "401d0a1e30233aecb5b5c1f1522c1f6e0f4d32e735ab18ea03e6094a9e07e824",
+      "fileVersion": "v0.41.0-923-g7b8915bc1",
+      "clientApiVersion": 131077,
+      "licensePaths": [
+        "licenses/mpv/COPYING.GPLv2",
+        "licenses/mpv/NOTICE.md"
+      ]
+    },
+    "ffmpeg.exe": {
+      "sha256": "5af82a0d4fe2b9eae211b967332ea97edfc51c6b328ca35b827e73eac560dc0d",
+      "licensePaths": [
+        "licenses/ffmpeg/LICENSE",
+        "licenses/ffmpeg/README.txt"
+      ]
+    },
+    "ffprobe.exe": {
+      "sha256": "192a1d6899059765ac8c39764fc3148d4e6049955956dc2029f81f4bd6a8972d",
+      "licensePaths": [
+        "licenses/ffmpeg/LICENSE",
+        "licenses/ffmpeg/README.txt"
+      ]
+    }
+  }
+}

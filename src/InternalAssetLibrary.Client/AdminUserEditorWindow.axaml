@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="InternalAssetLibrary.Client.AdminUserEditorWindow"
+        Title="管理账号"
+        Width="560"
+        Height="690"
+        MinWidth="500"
+        MinHeight="580"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="22" RowSpacing="16">
+    <StackPanel>
+      <TextBlock x:Name="HeadingText" Text="管理账号" Classes="pageTitle" />
+      <TextBlock x:Name="DescriptionText" Text="设置账号角色与可用权限" Classes="muted" Margin="0,4,0,0" />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Spacing="12">
+        <TextBlock Text="用户名" Classes="muted" />
+        <TextBox x:Name="UsernameBox" MaxLength="32" />
+        <StackPanel x:Name="CreateOnlyFields" Spacing="12">
+          <TextBlock Text="显示名称" Classes="muted" />
+          <TextBox x:Name="DisplayNameBox" MaxLength="40" />
+          <TextBlock Text="初始密码" Classes="muted" />
+          <TextBox x:Name="PasswordBox" PasswordChar="●" MaxLength="128" />
+          <TextBlock Text="8 至 128 位，至少包含大写、小写、数字、特殊符号中的两种。" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+        <CheckBox x:Name="IsAdminBox" Content="管理员账号" />
+        <TextBlock Text="普通成员权限" Classes="sectionTitle" Margin="0,6,0,0" />
+        <ItemsControl ItemsSource="{Binding Permissions}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <CheckBox Width="240" Margin="0,0,8,8" Content="{Binding Label}" IsChecked="{Binding IsSelected}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock x:Name="ValidationText" Foreground="{DynamicResource ErrorBrush}" TextWrapping="Wrap" />
+      </StackPanel>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Classes="quiet" Click="Cancel_OnClick">取消</Button>
+      <Button Classes="accent" Click="Save_OnClick">保存</Button>
+    </StackPanel>
+  </Grid>
+</Window>

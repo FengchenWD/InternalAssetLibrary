@@ -1,0 +1,2783 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:InternalAssetLibrary.Client.Controls"
+        xmlns:vm="using:InternalAssetLibrary.Client.ViewModels"
+        x:Class="InternalAssetLibrary.Client.MainWindow"
+        Title="云汀素材管理工具"
+        Icon="avares://InternalAssetLibrary.Client/Assets/internal-asset-library-256.png"
+        Width="1440"
+        Height="880"
+        MinWidth="1080"
+        MinHeight="680"
+        WindowStartupLocation="CenterScreen"
+        KeyDown="MainWindow_OnKeyDown"
+        TransparencyLevelHint="Mica, AcrylicBlur, None">
+  <Window.Resources>
+    <DataTemplate x:Key="TransferTaskTemplate" DataType="{x:Type vm:TransferItemViewModel}">
+      <Grid ColumnDefinitions="*,90,140,Auto" Margin="12,10">
+        <StackPanel>
+          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+          <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Margin="0,8,12,0" />
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding ProgressLabel}" VerticalAlignment="Center" Classes="muted" />
+        <TextBlock Grid.Column="2" Text="{Binding Status}" VerticalAlignment="Center" TextWrapping="Wrap" />
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <Button Classes="quiet" IsVisible="{Binding CanPause}" Click="TransferPause_OnClick">暂停</Button>
+          <Button Classes="quiet" IsVisible="{Binding CanResume}" Click="TransferResume_OnClick">继续</Button>
+          <Button Classes="quiet" IsEnabled="{Binding CanCancel}" Click="TransferCancel_OnClick">取消</Button>
+        </StackPanel>
+      </Grid>
+    </DataTemplate>
+  </Window.Resources>
+  <Grid x:Name="MainContentGrid" Background="Transparent">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="232" MinWidth="180" MaxWidth="420" />
+      <ColumnDefinition Width="10" />
+      <ColumnDefinition Width="*" MinWidth="360" />
+      <ColumnDefinition Width="10" />
+      <ColumnDefinition Width="320" MinWidth="260" MaxWidth="520" />
+    </Grid.ColumnDefinitions>
+    <Border x:Name="NavigationSidebar"
+            Grid.Column="0"
+            Width="216"
+            ClipToBounds="True"
+            Background="{DynamicResource NavigationBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="0,0,1,0">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Width" Duration="0:0:0.18" />
+        </Transitions>
+      </Border.Transitions>
+      <Grid Width="200"
+            HorizontalAlignment="Left"
+            RowDefinitions="Auto,*,Auto,Auto"
+            Margin="8,12">
+        <Button x:Name="CurrentUserAvatarButton"
+                Height="64"
+                Padding="0"
+                HorizontalContentAlignment="Stretch"
+                Classes="contextNav avatarButton"
+                ToolTip.Tip="个人资料"
+                Click="CurrentUserAvatar_OnClick">
+          <Grid ColumnDefinitions="48,*">
+            <Grid Width="42" Height="42" HorizontalAlignment="Center">
+              <Border CornerRadius="8"
+                      Background="{DynamicResource AccentSoftBrush}"
+                      ClipToBounds="True">
+                <Grid>
+                  <TextBlock x:Name="CurrentUserInitial"
+                             Text="-"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             FontSize="16"
+                             FontWeight="Bold"
+                             Foreground="{DynamicResource AccentBrush}" />
+                  <Image x:Name="CurrentUserAvatarImage"
+                         IsVisible="False"
+                         Stretch="UniformToFill" />
+                </Grid>
+              </Border>
+              <Border x:Name="SessionStateDot"
+                      Width="9"
+                      Height="9"
+                      CornerRadius="5"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Bottom"
+                      BorderBrush="{DynamicResource NavigationBrush}"
+                      BorderThickness="2"
+                      Background="{DynamicResource SecondaryTextBrush}" />
+            </Grid>
+            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+              <TextBlock x:Name="CurrentDisplayName" Text="本地模式" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" />
+              <TextBlock x:Name="CurrentUsername" Text="云端未登录" Classes="muted" FontSize="10" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </Grid>
+        </Button>
+
+        <ScrollViewer Grid.Row="1"
+                      Margin="0,18,0,10"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="5">
+            <Button x:Name="LocalNav" Height="44" Padding="0" HorizontalContentAlignment="Stretch" Classes="contextNav selected" Tag="local" ToolTip.Tip="本地素材" Click="Navigation_OnClick"
+                    DragDrop.AllowDrop="True"
+                    DragDrop.DragOver="CloudDragLocalNavigation_OnDragOver"
+                    DragDrop.Drop="CloudDragLocalNavigation_OnDrop">
+              <Grid ColumnDefinitions="48,*"><PathIcon Width="21" Height="21" HorizontalAlignment="Center" Data="M3,5 L9,5 L11,7 L21,7 L21,19 L3,19 Z" /><TextBlock Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Text="本地素材" /></Grid>
+            </Button>
+            <Button x:Name="SharedNav" Height="44" Padding="0" HorizontalContentAlignment="Stretch" Classes="contextNav" Tag="shared" ToolTip.Tip="共享素材" Click="Navigation_OnClick">
+              <Grid ColumnDefinitions="48,*"><PathIcon Width="22" Height="22" HorizontalAlignment="Center" Data="M19.35,10.04 C18.67,6.59 15.64,4 12,4 C9.11,4 6.6,5.64 5.35,8.04 C2.34,8.36 0,10.9 0,14 C0,17.31 2.69,20 6,20 L19,20 C21.76,20 24,17.76 24,15 C24,12.36 21.95,10.22 19.35,10.04 Z" /><TextBlock Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Text="共享素材" /></Grid>
+            </Button>
+            <Button x:Name="PlayerNav" Height="44" Padding="0" HorizontalContentAlignment="Stretch" Classes="contextNav" Tag="player" ToolTip.Tip="播放器" Click="Navigation_OnClick">
+              <Grid ColumnDefinitions="48,*"><PathIcon Width="22" Height="22" HorizontalAlignment="Center" Data="M5,3 L19,12 L5,21 Z" /><TextBlock Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Text="播放器" /></Grid>
+            </Button>
+            <Button x:Name="EditorNav" Height="44" Padding="0" HorizontalContentAlignment="Stretch" Classes="contextNav" Tag="editor" ToolTip.Tip="编辑器" Click="Navigation_OnClick">
+              <Grid ColumnDefinitions="48,*"><TextBlock Text="✂" FontFamily="Segoe UI Symbol" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Text="编辑器" /></Grid>
+            </Button>
+            <Button x:Name="TransfersNav" Height="44" Padding="0" HorizontalContentAlignment="Stretch" Classes="contextNav" Tag="transfers" ToolTip.Tip="传输任务" Click="Navigation_OnClick">
+              <Grid ColumnDefinitions="48,*"><PathIcon Width="22" Height="22" HorizontalAlignment="Center" Data="M7,2 L11,6 L8,6 L8,15 L6,15 L6,6 L3,6 Z M17,22 L13,18 L16,18 L16,9 L18,9 L18,18 L21,18 Z" /><TextBlock Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Text="传输任务" /></Grid>
+            </Button>
+            <Button x:Name="UsersNav" Height="44" Padding="0" HorizontalContentAlignment="Stretch" Classes="contextNav" Tag="users" ToolTip.Tip="用户列表" Click="Navigation_OnClick">
+              <Grid ColumnDefinitions="48,*"><PathIcon Width="22" Height="22" HorizontalAlignment="Center" Data="M16,11 C17.66,11 19,9.66 19,8 C19,6.34 17.66,5 16,5 C14.34,5 13,6.34 13,8 C13,9.66 14.34,11 16,11 Z M8,11 C9.66,11 11,9.66 11,8 C11,6.34 9.66,5 8,5 C6.34,5 5,6.34 5,8 C5,9.66 6.34,11 8,11 Z M8,13 C5.67,13 1,14.17 1,16.5 L1,19 L15,19 L15,16.5 C15,14.17 10.33,13 8,13 Z M16,13 C15.71,13 15.38,13.02 15.03,13.05 C16.19,13.89 17,15.02 17,16.5 L17,19 L23,19 L23,16.5 C23,14.17 18.33,13 16,13 Z" /><TextBlock Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Text="用户列表" /></Grid>
+            </Button>
+            <Button x:Name="ProfileNav" Height="44" Padding="0" HorizontalContentAlignment="Stretch" Classes="contextNav" Tag="profile" ToolTip.Tip="个人资料" Click="Navigation_OnClick">
+              <Grid ColumnDefinitions="48,*"><PathIcon Width="21" Height="21" HorizontalAlignment="Center" Data="M12,12 C14.21,12 16,10.21 16,8 C16,5.79 14.21,4 12,4 C9.79,4 8,5.79 8,8 C8,10.21 9.79,12 12,12 Z M12,14 C7.58,14 4,16.24 4,19 L4,21 L20,21 L20,19 C20,16.24 16.42,14 12,14 Z" /><TextBlock Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Text="个人资料" /></Grid>
+            </Button>
+            <Button x:Name="RecycleBinNav" Height="44" Padding="0" HorizontalContentAlignment="Stretch" Classes="contextNav" Tag="recycle" ToolTip.Tip="我的回收站" IsVisible="False" Click="Navigation_OnClick">
+              <Grid ColumnDefinitions="48,*"><PathIcon Width="21" Height="21" HorizontalAlignment="Center" Data="M8,4 L10,2 L14,2 L16,4 L21,4 L21,7 L3,7 L3,4 Z M5,9 L19,9 L18,22 L6,22 Z M9,12 L11,12 L11,19 L9,19 Z M13,12 L15,12 L15,19 L13,19 Z" /><TextBlock Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Text="我的回收站" /></Grid>
+            </Button>
+            <Button x:Name="AdminNav" Height="44" Padding="0" HorizontalContentAlignment="Stretch" Classes="contextNav" Tag="admin" ToolTip.Tip="管理后台" Click="Navigation_OnClick">
+              <Grid ColumnDefinitions="48,*"><PathIcon Width="21" Height="21" HorizontalAlignment="Center" Data="M12,2 L4,5.5 L4,11 C4,16.05 7.41,20.74 12,22 C16.59,20.74 20,16.05 20,11 L20,5.5 Z M12,6 C13.1,6 14,6.9 14,8 C14,9.1 13.1,10 12,10 C10.9,10 10,9.1 10,8 C10,6.9 10.9,6 12,6 Z M12,17 C10.33,17 8.86,16.15 8,14.85 C8.02,13.52 10.67,12.8 12,12.8 C13.32,12.8 15.98,13.52 16,14.85 C15.14,16.15 13.67,17 12,17 Z" /><TextBlock Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Text="管理后台" /></Grid>
+            </Button>
+          </StackPanel>
+        </ScrollViewer>
+
+        <Button x:Name="SettingsNav" Grid.Row="2" Height="44" Padding="0" HorizontalContentAlignment="Stretch" Classes="contextNav" Tag="settings" ToolTip.Tip="设置" Click="Navigation_OnClick">
+          <Grid ColumnDefinitions="48,*"><PathIcon Width="22" Height="22" HorizontalAlignment="Center" Data="M19.14,12.94 C19.18,12.64 19.2,12.32 19.2,12 C19.2,11.68 19.18,11.36 19.13,11.06 L21.17,9.47 L19.24,6.13 L16.84,7.1 C16.34,6.71 15.79,6.38 15.19,6.14 L14.83,3.58 L10.97,3.58 L10.6,6.14 C10.01,6.38 9.45,6.72 8.96,7.1 L6.55,6.13 L4.62,9.47 L6.66,11.06 C6.61,11.36 6.58,11.69 6.58,12 C6.58,12.31 6.61,12.64 6.66,12.94 L4.62,14.53 L6.55,17.87 L8.96,16.9 C9.45,17.29 10.01,17.62 10.6,17.86 L10.97,20.42 L14.83,20.42 L15.19,17.86 C15.79,17.62 16.34,17.29 16.84,16.9 L19.24,17.87 L21.17,14.53 Z M12.9,15.2 C11.13,15.2 9.7,13.77 9.7,12 C9.7,10.23 11.13,8.8 12.9,8.8 C14.67,8.8 16.1,10.23 16.1,12 C16.1,13.77 14.67,15.2 12.9,15.2 Z" /><TextBlock Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" Text="设置" /></Grid>
+        </Button>
+        <Button x:Name="SidebarToggleButton" Grid.Row="3" Height="44" Padding="0" HorizontalContentAlignment="Stretch" Classes="contextNav" ToolTip.Tip="收起侧栏" Click="SidebarToggle_OnClick">
+          <Grid ColumnDefinitions="48,*">
+            <TextBlock x:Name="SidebarToggleGlyph" Text="‹" FontSize="25" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <TextBlock x:Name="SidebarToggleLabel" Grid.Column="1" Margin="10,0,0,0" Text="收起侧栏" VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+      </Grid>
+    </Border>
+
+    <Border x:Name="LocalFolderSidebar"
+            Grid.Column="1"
+            Margin="8,12"
+            Padding="8"
+            ClipToBounds="True"
+            Classes="glass"
+            CornerRadius="8">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Width" Duration="0:0:0.18" />
+          <DoubleTransition Property="Opacity" Duration="0:0:0.16" />
+        </Transitions>
+      </Border.Transitions>
+      <Grid HorizontalAlignment="Stretch"
+            RowDefinitions="Auto,Auto,Auto,*,Auto">
+        <Button x:Name="LocalFolderSidebarToggleButton"
+                Height="44"
+                Padding="0"
+                HorizontalAlignment="Left"
+                HorizontalContentAlignment="Stretch"
+                Classes="contextNav"
+                ToolTip.Tip="收起文件夹栏"
+                Click="LocalFolderSidebarToggle_OnClick">
+          <Grid ColumnDefinitions="48,*">
+            <TextBlock x:Name="LocalFolderSidebarToggleGlyph"
+                       Text="‹"
+                       FontSize="25"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1"
+                        Margin="10,0,0,0"
+                        VerticalAlignment="Center">
+              <TextBlock Text="素材文件夹" FontWeight="SemiBold" />
+              <TextBlock Text="本地索引目录" Classes="muted" FontSize="10" />
+            </StackPanel>
+          </Grid>
+        </Button>
+
+        <Button x:Name="AllLocalFoldersButton"
+                Grid.Row="1"
+                Height="42"
+                Padding="0"
+                Background="Transparent"
+                HorizontalAlignment="Left"
+                HorizontalContentAlignment="Stretch"
+                Classes="contextNav selected"
+                ToolTip.Tip="显示全部本地素材"
+                Click="AllLocalFolders_OnClick">
+          <Grid ColumnDefinitions="48,*" IsHitTestVisible="False">
+            <PathIcon Width="19"
+                      Height="19"
+                      HorizontalAlignment="Center"
+                      Data="M3,5 L9,5 L11,7 L21,7 L21,19 L3,19 Z" />
+            <TextBlock Grid.Column="1"
+                       Margin="10,0,0,0"
+                       VerticalAlignment="Center"
+                       Text="全部文件夹" />
+          </Grid>
+        </Button>
+
+        <Border x:Name="LocalFolderDropTarget"
+                Grid.Row="2"
+                Height="54"
+                Margin="0,6,0,0"
+                Padding="0"
+                Classes="dropTarget"
+                 DragDrop.AllowDrop="True"
+                 PointerPressed="UploadDropTarget_OnPointerPressed"
+                 PointerMoved="UploadDropTarget_OnPointerMoved"
+                 PointerReleased="LocalFolderDropTarget_OnPointerReleased"
+                 DragDrop.DragOver="LocalFolderDropTarget_OnDragOver"
+                DragDrop.DragLeave="LocalFolderDropTarget_OnDragLeave"
+                DragDrop.Drop="LocalFolderDropTarget_OnDrop">
+          <Grid ColumnDefinitions="48,*">
+            <TextBlock Text="+"
+                       FontSize="22"
+                       Foreground="{DynamicResource AccentBrush}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1"
+                        Margin="10,0,8,0"
+                        VerticalAlignment="Center">
+              <TextBlock Text="拖入文件夹"
+                         FontWeight="SemiBold" />
+              <TextBlock Text="释放后连接素材目录"
+                         Classes="muted"
+                         FontSize="10" />
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <ScrollViewer x:Name="CompactLocalFolderList"
+                      Grid.Row="2"
+                      Grid.RowSpan="3"
+                      Margin="0,6,0,0"
+                      IsVisible="False"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding CompactLocalFolderNodes}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel Spacing="4" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type vm:LocalFolderNodeViewModel}">
+                <Button Width="48"
+                        Height="42"
+                        Padding="0"
+                        Background="Transparent"
+                        Classes="contextNav folderDropNode"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        ToolTip.Tip="{Binding FullPath}"
+                        ToolTip.ShowDelay="200"
+                        Click="CompactLocalFolder_OnClick"
+                        DragDrop.AllowDrop="True"
+                        DragDrop.DragOver="LocalFolderNode_OnDragOver"
+                        DragDrop.DragLeave="LocalFolderNode_OnDragLeave"
+                        DragDrop.Drop="LocalFolderNode_OnDrop">
+                  <Grid Width="48" Height="42" IsHitTestVisible="False">
+                    <Border Width="3"
+                            Height="22"
+                            CornerRadius="2"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Background="{DynamicResource AccentBrush}"
+                            IsVisible="{Binding IsCompactSelected}" />
+                    <PathIcon Width="19"
+                              Height="19"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Foreground="{DynamicResource AccentBrush}"
+                              Data="M3,5 L9,5 L11,7 L21,7 L21,19 L3,19 Z" />
+                    <Border Width="8"
+                            Height="8"
+                            CornerRadius="4"
+                            Margin="0,0,7,7"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Bottom"
+                            Background="{DynamicResource WarningBrush}"
+                            IsVisible="{Binding IsOffline}" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <ScrollViewer x:Name="ExpandedLocalFolderContent" Grid.Row="3"
+                      Margin="0,6,0,0"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+          <TreeView x:Name="LocalFolderTree"
+                    ItemsSource="{Binding LocalFolderNodes}"
+                    SelectionChanged="LocalFolderTree_OnSelectionChanged">
+            <TreeView.ItemTemplate>
+              <TreeDataTemplate DataType="{x:Type vm:LocalFolderNodeViewModel}"
+                                ItemsSource="{Binding Children}">
+                <Grid ColumnDefinitions="22,*,Auto"
+                      Classes="folderDropNode"
+                      MinHeight="30"
+                      Background="Transparent"
+                      ToolTip.Tip="{Binding FullPath}"
+                      ToolTip.ShowDelay="250"
+                      ContextRequested="LocalFolderNode_OnContextRequested"
+                      DragDrop.AllowDrop="True"
+                      DragDrop.DragOver="LocalFolderNode_OnDragOver"
+                      DragDrop.DragLeave="LocalFolderNode_OnDragLeave"
+                      DragDrop.Drop="LocalFolderNode_OnDrop">
+                  <PathIcon Width="17"
+                            Height="17"
+                            VerticalAlignment="Center"
+                            Data="M3,5 L9,5 L11,7 L21,7 L21,19 L3,19 Z" />
+                  <TextBlock Grid.Column="1"
+                             Margin="6,0,0,0"
+                             VerticalAlignment="Center"
+                             Text="{Binding DisplayName}"
+                             TextTrimming="CharacterEllipsis"
+                             ToolTip.Tip="{Binding FullPath}"
+                             ToolTip.ShowDelay="250" />
+                  <StackPanel Grid.Column="2"
+                              Margin="8,0,2,0"
+                              Orientation="Horizontal"
+                              Spacing="6"
+                              VerticalAlignment="Center">
+                    <Border IsVisible="{Binding IsOffline}"
+                            Padding="5,1"
+                            CornerRadius="5"
+                            BorderBrush="{DynamicResource WarningBrush}"
+                            BorderThickness="1"
+                            Opacity="0.82">
+                      <TextBlock Text="不可用"
+                                 Foreground="{DynamicResource WarningBrush}"
+                                 FontSize="9"
+                                 FontWeight="SemiBold" />
+                    </Border>
+                    <TextBlock Text="{Binding AssetCountLabel}"
+                               Classes="muted"
+                               FontSize="10"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                </Grid>
+              </TreeDataTemplate>
+            </TreeView.ItemTemplate>
+          </TreeView>
+        </ScrollViewer>
+
+        <Border x:Name="LocalFileImportDropTarget"
+                Grid.Row="4"
+                Height="64"
+                Margin="0,6,0,0"
+                Padding="0"
+                Classes="dropTarget"
+                 ToolTip.Tip="先选择一个具体且可用的文件夹，再把素材文件拖到这里"
+                 DragDrop.AllowDrop="True"
+                 PointerPressed="UploadDropTarget_OnPointerPressed"
+                 PointerMoved="UploadDropTarget_OnPointerMoved"
+                 PointerReleased="LocalFileImportDropTarget_OnPointerReleased"
+                 DragDrop.DragOver="LocalFileImportDropTarget_OnDragOver"
+                DragDrop.DragLeave="LocalFileImportDropTarget_OnDragLeave"
+                DragDrop.Drop="LocalFileImportDropTarget_OnDrop">
+          <Grid ColumnDefinitions="48,*">
+            <TextBlock Text="↓"
+                       FontSize="20"
+                       Foreground="{DynamicResource AccentBrush}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1"
+                        Margin="10,0,8,0"
+                        VerticalAlignment="Center">
+              <TextBlock Text="拖入素材文件"
+                         FontWeight="SemiBold" />
+              <TextBlock x:Name="LocalFileImportDropSubtitle"
+                         Text="请先选择具体文件夹"
+                         Classes="muted"
+                         FontSize="10"
+                         TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </Grid>
+        </Border>
+      </Grid>
+    </Border>
+
+    <Border x:Name="CloudFolderSidebar"
+            Grid.Column="1"
+            Margin="8,12"
+            Padding="8"
+            ClipToBounds="True"
+            IsVisible="False"
+            Classes="glass"
+            CornerRadius="8">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Width" Duration="0:0:0.18" />
+          <DoubleTransition Property="Opacity" Duration="0:0:0.16" />
+        </Transitions>
+      </Border.Transitions>
+      <Grid HorizontalAlignment="Stretch"
+            RowDefinitions="Auto,Auto,*">
+        <Button x:Name="CloudFolderSidebarToggleButton"
+                Height="44"
+                Padding="0"
+                HorizontalAlignment="Left"
+                HorizontalContentAlignment="Stretch"
+                Classes="contextNav"
+                ToolTip.Tip="收起文件夹栏"
+                Click="LocalFolderSidebarToggle_OnClick">
+          <Grid ColumnDefinitions="48,*">
+            <TextBlock x:Name="CloudFolderSidebarToggleGlyph"
+                       Text="‹"
+                       FontSize="25"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1"
+                        Margin="10,0,0,0"
+                        VerticalAlignment="Center">
+              <TextBlock Text="素材文件夹" FontWeight="SemiBold" />
+              <TextBlock Text="团队云端目录" Classes="muted" FontSize="10" />
+            </StackPanel>
+          </Grid>
+        </Button>
+
+        <Button x:Name="AllCloudFoldersButton"
+                Grid.Row="1"
+                Height="42"
+                Padding="0"
+                Background="Transparent"
+                HorizontalAlignment="Left"
+                HorizontalContentAlignment="Stretch"
+                Classes="contextNav selected"
+                ToolTip.Tip="显示全部云端素材"
+                Click="AllCloudFolders_OnClick"
+                DragDrop.AllowDrop="True"
+                DragDrop.DragOver="CloudFolderRoot_OnDragOver"
+                DragDrop.DragLeave="CloudFolderNode_OnDragLeave"
+                DragDrop.Drop="CloudFolderRoot_OnDrop">
+          <Grid ColumnDefinitions="48,*" IsHitTestVisible="False">
+            <PathIcon Width="19"
+                      Height="19"
+                      HorizontalAlignment="Center"
+                      Data="M3,5 L9,5 L11,7 L21,7 L21,19 L3,19 Z" />
+            <TextBlock Grid.Column="1"
+                       Margin="10,0,0,0"
+                       VerticalAlignment="Center"
+                       Text="全部文件夹" />
+          </Grid>
+        </Button>
+
+        <Grid x:Name="ExpandedCloudFolderContent"
+              Grid.Row="2"
+              RowDefinitions="Auto,*"
+              Margin="0,6,0,0">
+          <Button Height="38"
+                  Classes="quiet"
+                  HorizontalAlignment="Stretch"
+                  Click="CreateCloudFolder_OnClick">新建文件夹</Button>
+          <ScrollViewer Grid.Row="1"
+                        Margin="0,6,0,0"
+                        HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Auto">
+            <TreeView x:Name="CloudFolderTree"
+                      ItemsSource="{Binding CloudFolderNodes}"
+                      SelectionChanged="CloudFolderTree_OnSelectionChanged">
+              <TreeView.ItemTemplate>
+                <TreeDataTemplate DataType="{x:Type vm:CloudFolderNodeViewModel}"
+                                  ItemsSource="{Binding Children}">
+                  <Grid ColumnDefinitions="22,*"
+                        Classes="folderDropNode"
+                        MinHeight="30"
+                        Background="Transparent"
+                        ToolTip.Tip="{Binding CreatorLabel}"
+                        ToolTip.ShowDelay="250"
+                        ContextRequested="CloudFolderNode_OnContextRequested"
+                        DragDrop.AllowDrop="True"
+                        DragDrop.DragOver="CloudFolderNode_OnDragOver"
+                        DragDrop.DragLeave="CloudFolderNode_OnDragLeave"
+                        DragDrop.Drop="CloudFolderNode_OnDrop">
+                    <PathIcon Width="17"
+                              Height="17"
+                              VerticalAlignment="Center"
+                              Data="M3,5 L9,5 L11,7 L21,7 L21,19 L3,19 Z" />
+                    <TextBlock Grid.Column="1"
+                               Margin="6,0,0,0"
+                               VerticalAlignment="Center"
+                               Text="{Binding Name}"
+                               TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </TreeDataTemplate>
+              </TreeView.ItemTemplate>
+            </TreeView>
+          </ScrollViewer>
+        </Grid>
+
+        <ScrollViewer x:Name="CompactCloudFolderList"
+                      Grid.Row="2"
+                      Margin="0,6,0,0"
+                      IsVisible="False"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding CompactCloudFolderNodes}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel Spacing="4" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type vm:CloudFolderNodeViewModel}">
+                <Button Width="48"
+                        Height="42"
+                        Padding="0"
+                        Background="Transparent"
+                        Classes="contextNav folderDropNode"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        ToolTip.Tip="{Binding Name}"
+                        ToolTip.ShowDelay="200"
+                        Click="CompactCloudFolder_OnClick"
+                        ContextRequested="CloudFolderNode_OnContextRequested"
+                        DragDrop.AllowDrop="True"
+                        DragDrop.DragOver="CloudFolderNode_OnDragOver"
+                        DragDrop.DragLeave="CloudFolderNode_OnDragLeave"
+                        DragDrop.Drop="CloudFolderNode_OnDrop">
+                  <Grid Width="48" Height="42" IsHitTestVisible="False">
+                    <Border Width="3"
+                            Height="22"
+                            CornerRadius="2"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Background="{DynamicResource AccentBrush}"
+                            IsVisible="{Binding IsCompactSelected}" />
+                    <PathIcon Width="19"
+                              Height="19"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Foreground="{DynamicResource AccentBrush}"
+                              Data="M3,5 L9,5 L11,7 L21,7 L21,19 L3,19 Z" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+    </Border>
+
+    <GridSplitter x:Name="LocalFolderSplitter"
+                  Grid.Column="2"
+                  Margin="1,12"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  ResizeDirection="Columns"
+                  ResizeBehavior="PreviousAndNext"
+                  CornerRadius="3"
+                  ToolTip.Tip="拖动调整文件夹栏宽度" />
+
+    <Grid Grid.Column="3" Margin="24,22,24,22">
+      <Grid x:Name="LocalPage"
+            RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel>
+            <TextBlock Text="本地素材" Classes="pageTitle" />
+            <TextBlock x:Name="LocalSummaryText" Text="尚未索引文件夹" Classes="muted" Margin="0,4,0,0" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+            <ToggleButton x:Name="LocalFilterToggleButton" Classes="filterChip moduleToggle" Click="LocalFilterToggle_OnClick">展开筛选</ToggleButton>
+            <ToggleButton x:Name="LocalBatchModeButton"
+                          Classes="filterChip"
+                          Click="LocalBatchMode_OnClick">多选</ToggleButton>
+            <Button Classes="quiet" Click="RefreshLocal_OnClick" ToolTip.Tip="刷新素材库">刷新</Button>
+            <Button Classes="accent" Click="AddFolder_OnClick">添加文件夹</Button>
+          </StackPanel>
+        </Grid>
+
+        <ScrollViewer x:Name="LocalCategoryFilterPanel" Grid.Row="1"
+                      Margin="0,16,0,8"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button x:Name="LocalAllCategoryButton" Tag="all" Classes="filterChip selected" Click="LocalCategoryQuickFilter_OnClick">全部</Button>
+            <Button x:Name="LocalAudioCategoryButton" Tag="audio" Classes="filterChip" Click="LocalCategoryQuickFilter_OnClick">音频</Button>
+            <Button x:Name="LocalVideoCategoryButton" Tag="video" Classes="filterChip" Click="LocalCategoryQuickFilter_OnClick">视频</Button>
+            <Button x:Name="LocalImageCategoryButton" Tag="image" Classes="filterChip" Click="LocalCategoryQuickFilter_OnClick">图片</Button>
+          </StackPanel>
+        </ScrollViewer>
+
+        <TextBox x:Name="LocalSearchBox"
+                 Grid.Row="2"
+                 Margin="0,0,0,8"
+                 Watermark="搜索文件名、标签或格式"
+                 TextChanged="LocalSearch_OnTextChanged" />
+
+        <Grid x:Name="LocalTagFilterPanel" Grid.Row="3" ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,0,0,8">
+          <TextBlock Text="标签" Classes="muted" VerticalAlignment="Center" Margin="2,0,4,0" />
+          <Button x:Name="LocalTagFilterButton"
+                  Grid.Column="1"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
+                  ToolTip.Tip="多选时匹配包含任意一个已选标签的素材">
+            <Button.Flyout>
+              <Flyout FlyoutPresenterClasses="tagFilterFlyout">
+                <Border Classes="popupSurface" Width="320" Padding="12">
+                  <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="标签筛选" FontWeight="SemiBold" VerticalAlignment="Center" />
+                      <ToggleButton x:Name="LocalTagMultiSelectButton"
+                                    Grid.Column="1"
+                                    Classes="filterChip"
+                                    ToolTip.Tip="开启后可选择多个标签，并匹配包含任意一个已选标签的素材"
+                                    Click="LocalTagMode_OnClick">多选</ToggleButton>
+                    </Grid>
+                    <ScrollViewer MaxHeight="260"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                      <ItemsControl ItemsSource="{Binding LocalTagFilters}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate DataType="{x:Type vm:CloudTagFilterItemViewModel}">
+                            <ToggleButton Width="294"
+                                          HorizontalContentAlignment="Left"
+                                          Classes="filterChip"
+                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                          Click="LocalTagFilter_OnClick">
+                              <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                            </ToggleButton>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </ScrollViewer>
+                  </StackPanel>
+                </Border>
+              </Flyout>
+            </Button.Flyout>
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock x:Name="LocalTagFilterLabel"
+                         Text="全部标签"
+                         TextTrimming="CharacterEllipsis"
+                         VerticalAlignment="Center" />
+              <PathIcon Grid.Column="1"
+                        Width="16"
+                        Height="16"
+                        Margin="10,0,0,0"
+                        VerticalAlignment="Center"
+                        Data="M7,10 L12,15 L17,10 Z" />
+            </Grid>
+          </Button>
+        </Grid>
+
+        <Grid x:Name="LocalDateFilterPanel" Grid.Row="4" ColumnDefinitions="Auto,*,*,*,Auto" ColumnSpacing="8" Margin="0,0,0,14">
+          <TextBlock Text="加入日期" Classes="muted" VerticalAlignment="Center" Margin="2,0,4,0" />
+          <CalendarDatePicker x:Name="LocalFromDateFilter" Grid.Column="1" Watermark="开始日期" ToolTip.Tip="加入日期起点" SelectedDateChanged="LocalDateFilter_OnChanged" />
+          <CalendarDatePicker x:Name="LocalToDateFilter" Grid.Column="2" Watermark="结束日期" ToolTip.Tip="加入日期终点" SelectedDateChanged="LocalDateFilter_OnChanged" />
+          <ComboBox x:Name="LocalSortFilter" Grid.Column="3" SelectedIndex="2" SelectionChanged="LocalFilter_OnSelectionChanged">
+            <ComboBoxItem Content="最新加入" />
+            <ComboBoxItem Content="最早加入" />
+            <ComboBoxItem Content="名称 A-Z" />
+            <ComboBoxItem Content="名称 Z-A" />
+            <ComboBoxItem Content="文件最大" />
+          </ComboBox>
+          <StackPanel Grid.Column="4"
+                      Orientation="Horizontal"
+                      VerticalAlignment="Center"
+                      Spacing="6">
+            <Button x:Name="LocalGridViewButton"
+                    Tag="Grid"
+                    Classes="viewMode selected"
+                    ToolTip.Tip="方格展示"
+                    Click="LocalViewMode_OnClick">
+              <PathIcon Width="18"
+                        Height="18"
+                        Data="M3,3 L10,3 L10,10 L3,10 Z M14,3 L21,3 L21,10 L14,10 Z M3,14 L10,14 L10,21 L3,21 Z M14,14 L21,14 L21,21 L14,21 Z" />
+            </Button>
+            <Button x:Name="LocalListViewButton"
+                    Tag="List"
+                    Classes="viewMode"
+                    ToolTip.Tip="列表展示"
+                    Click="LocalViewMode_OnClick">
+              <PathIcon Width="18"
+                        Height="18"
+                        Data="M3,5 L6,5 L6,8 L3,8 Z M9,5 L21,5 L21,8 L9,8 Z M3,11 L6,11 L6,14 L3,14 Z M9,11 L21,11 L21,14 L9,14 Z M3,17 L6,17 L6,20 L3,20 Z M9,17 L21,17 L21,20 L9,20 Z" />
+            </Button>
+          </StackPanel>
+        </Grid>
+
+        <Border x:Name="LocalBatchToolbar"
+                Grid.Row="5"
+                IsVisible="False"
+                Margin="0,0,0,14"
+                Padding="12,9"
+                CornerRadius="8"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1">
+          <Grid RowDefinitions="Auto,Auto,Auto"
+                ColumnDefinitions="Auto,*"
+                ColumnSpacing="12"
+                RowSpacing="8">
+            <CheckBox x:Name="LocalSelectAllCheckBox"
+                      Content="全选当前结果"
+                      IsThreeState="True"
+                      VerticalAlignment="Center"
+                      Checked="LocalSelectAll_OnChanged"
+                      Unchecked="LocalSelectAll_OnChanged" />
+            <TextBlock x:Name="LocalSelectionSummaryText"
+                       Grid.Column="1"
+                       Text="未选择素材"
+                       Classes="muted"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Center" />
+            <WrapPanel Grid.Row="1"
+                       Grid.ColumnSpan="2"
+                       Orientation="Horizontal"
+                       HorizontalAlignment="Right">
+              <Button x:Name="BatchSaveLocalAssetsButton"
+                      Margin="4"
+                      Classes="quiet"
+                      IsEnabled="False"
+                      Click="BatchSaveLocalAssets_OnClick">批量另存为</Button>
+              <Button x:Name="BatchTagLocalAssetsButton"
+                      Margin="4"
+                      Classes="quiet"
+                      IsEnabled="False"
+                      Click="BatchTagLocalAssets_OnClick">批量加标签</Button>
+              <Button x:Name="BatchRenameLocalAssetsButton"
+                      Margin="4"
+                      Classes="quiet"
+                      IsEnabled="False"
+                      Click="BatchRenameLocalAssets_OnClick">批量重命名</Button>
+              <Button x:Name="BatchRecycleLocalAssetsButton"
+                      Margin="4"
+                      Classes="quiet"
+                      IsEnabled="False"
+                      Foreground="{DynamicResource ErrorBrush}"
+                      Click="BatchRecycleLocalAssets_OnClick">批量删除</Button>
+            </WrapPanel>
+            <Grid x:Name="LocalBatchProgressPanel"
+                  Grid.Row="2"
+                  Grid.ColumnSpan="2"
+                  IsVisible="False"
+                  ColumnDefinitions="*,Auto,Auto"
+                  ColumnSpacing="10">
+              <ProgressBar x:Name="LocalBatchProgressBar"
+                           Height="8"
+                           Minimum="0"
+                           Maximum="100"
+                           VerticalAlignment="Center" />
+              <TextBlock x:Name="LocalBatchProgressText"
+                         Grid.Column="1"
+                         Classes="muted"
+                         VerticalAlignment="Center" />
+              <Button x:Name="CancelLocalBatchOperationButton"
+                      Grid.Column="2"
+                      Classes="quiet"
+                      Padding="10,4"
+                      Click="CancelLocalBatchOperation_OnClick">取消操作</Button>
+            </Grid>
+          </Grid>
+        </Border>
+
+        <Grid Grid.Row="6">
+          <Border x:Name="EmptyLocalState"
+                  Background="{DynamicResource SurfaceBrush}"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="8"
+                  Padding="28">
+            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+              <StackPanel Width="320"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Spacing="12">
+                <Border Width="72" Height="56" CornerRadius="8" Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Center">
+                  <TextBlock Text="+" FontSize="28" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <TextBlock Text="添加本地素材文件夹" FontWeight="SemiBold" FontSize="16" HorizontalAlignment="Center" TextAlignment="Center" />
+                <TextBlock Text="选择文件夹，或拖到左侧“拖入文件夹”区域"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Classes="muted" />
+                <Button Classes="accent" HorizontalAlignment="Center" Click="AddFolder_OnClick">选择文件夹</Button>
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <ScrollViewer x:Name="LocalAssetScroll"
+                        IsVisible="False"
+                        HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding VisibleLocalAssets}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:AssetCardViewModel}">
+                  <Border Width="{Binding CardWidth}"
+                          Classes="assetTile"
+                          Height="194"
+                          Margin="0,0,12,12"
+                          CornerRadius="8"
+                          Background="{DynamicResource SurfaceBrush}"
+                          BorderBrush="{DynamicResource BorderBrush}"
+                          BorderThickness="1"
+                          PointerEntered="AssetCard_OnPointerEntered"
+                          PointerExited="AssetCard_OnPointerExited"
+                          PointerPressed="AssetCard_OnPointerPressed"
+                          PointerReleased="AssetCard_OnPointerReleased"
+                          PointerMoved="AssetCard_OnPointerMoved"
+                          ContextRequested="LocalAsset_OnContextRequested"
+                          DoubleTapped="AssetCard_OnDoubleTapped">
+                    <Grid RowDefinitions="116,*">
+                      <Border Grid.RowSpan="2"
+                              Margin="1"
+                              CornerRadius="7"
+                              BorderBrush="{DynamicResource AccentBrush}"
+                              BorderThickness="2"
+                              IsHitTestVisible="False"
+                              IsVisible="{Binding IsHighlighted}"
+                              ZIndex="10" />
+                      <CheckBox Grid.RowSpan="2"
+                                Width="22"
+                                Height="22"
+                                Margin="9,9,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                IsVisible="{Binding IsBatchMode}"
+                                IsChecked="{Binding IsBatchSelected, Mode=TwoWay}"
+                                Checked="LocalAssetSelection_OnChanged"
+                                Unchecked="LocalAssetSelection_OnChanged"
+                                ToolTip.Tip="选择素材"
+                                ZIndex="11" />
+                      <Border Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="7,7,0,0" ClipToBounds="True">
+                        <Grid>
+                          <Image Source="{Binding Thumbnail}" IsVisible="{Binding HasThumbnail}" Stretch="UniformToFill" />
+                          <TextBlock Text="{Binding Initial}" IsVisible="{Binding ShowPlaceholder}" FontSize="38" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" Opacity="0.7" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                          <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="6,3" Classes="mediaBadge">
+                            <TextBlock Text="{Binding Extension}" Classes="mediaBadgeText" FontSize="10" FontWeight="Bold" />
+                          </Border>
+                          <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="8" Padding="6,3" Classes="mediaBadge">
+                            <TextBlock Text="{Binding StatusLabel}" Classes="mediaBadgeText" FontSize="10" />
+                          </Border>
+                        </Grid>
+                      </Border>
+                      <StackPanel Grid.Row="1" Margin="10,9" Spacing="3">
+                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding TagsLabel}" TextTrimming="CharacterEllipsis" Classes="muted" FontSize="11" />
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Text="{Binding TypeLabel}" Classes="muted" FontSize="10" />
+                          <TextBlock Grid.Column="1" Text="{Binding SizeLabel}" Classes="muted" FontSize="10" />
+                        </Grid>
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <ScrollViewer x:Name="LocalAssetListScroll"
+                        IsVisible="False"
+                        HorizontalScrollBarVisibility="Disabled"
+                        VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding VisibleLocalAssets}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:AssetCardViewModel}">
+                  <Border Height="142"
+                          Classes="assetTile"
+                          Margin="0,0,0,8"
+                          CornerRadius="8"
+                          Background="{DynamicResource SurfaceBrush}"
+                          BorderBrush="{DynamicResource BorderBrush}"
+                          BorderThickness="1"
+                          PointerEntered="AssetCard_OnPointerEntered"
+                          PointerExited="AssetCard_OnPointerExited"
+                          PointerPressed="AssetCard_OnPointerPressed"
+                          PointerReleased="AssetCard_OnPointerReleased"
+                          PointerMoved="AssetCard_OnPointerMoved"
+                          ContextRequested="LocalAsset_OnContextRequested"
+                          DoubleTapped="AssetCard_OnDoubleTapped">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Border Grid.ColumnSpan="2"
+                              Margin="1"
+                              CornerRadius="7"
+                              BorderBrush="{DynamicResource AccentBrush}"
+                              BorderThickness="2"
+                              IsHitTestVisible="False"
+                              IsVisible="{Binding IsHighlighted}"
+                              ZIndex="10" />
+                      <CheckBox Width="22"
+                                Height="22"
+                                Margin="9,0"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding IsBatchMode}"
+                                IsChecked="{Binding IsBatchSelected, Mode=TwoWay}"
+                                Checked="LocalAssetSelection_OnChanged"
+                                Unchecked="LocalAssetSelection_OnChanged"
+                                ToolTip.Tip="选择素材"
+                                ZIndex="11" />
+                      <Grid Grid.Column="1" Margin="12,10" RowDefinitions="Auto,Auto,*" RowSpacing="5">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                          <TextBlock Text="{Binding Name}"
+                                     TextTrimming="CharacterEllipsis"
+                                     FontWeight="SemiBold" />
+                          <Border Grid.Column="1" Padding="6,2" Classes="mediaBadge">
+                            <TextBlock Text="{Binding Extension}" Classes="mediaBadgeText" FontSize="9" FontWeight="Bold" />
+                          </Border>
+                        </Grid>
+                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                          <TextBlock Text="{Binding TagsLabel}" TextTrimming="CharacterEllipsis" Classes="muted" FontSize="10" />
+                          <TextBlock Grid.Column="1" Text="{Binding SizeLabel}" Classes="muted" FontSize="10" />
+                        </Grid>
+                        <Border Grid.Row="2"
+                                Margin="0,2,0,0"
+                                MinHeight="72"
+                                CornerRadius="7"
+                                ClipToBounds="True"
+                                Background="{DynamicResource SurfaceRaisedBrush}">
+                          <Grid>
+                            <Image Source="{Binding Thumbnail}" IsVisible="{Binding HasThumbnail}" Stretch="{Binding ListThumbnailStretch}" />
+                            <TextBlock Text="{Binding Initial}"
+                                       IsVisible="{Binding ShowPlaceholder}"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       Opacity="0.72"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                            <Border HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Margin="7"
+                                    Padding="6,2"
+                                    Classes="mediaBadge"
+                                    IsVisible="{Binding IsTimedMedia}">
+                              <TextBlock Text="{Binding DurationLabel}" Classes="mediaBadgeText" FontSize="9" FontWeight="SemiBold" />
+                            </Border>
+                            <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="7" Padding="6,2" Classes="mediaBadge">
+                              <TextBlock Text="{Binding StatusLabel}" Classes="mediaBadgeText" FontSize="9" />
+                            </Border>
+                          </Grid>
+                        </Border>
+                      </Grid>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <TextBlock x:Name="LocalFilteredEmptyState"
+                     Text="没有符合当前筛选条件的本地素材"
+                     IsVisible="False"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     TextAlignment="Center"
+                     Classes="muted" />
+        </Grid>
+      </Grid>
+
+      <Grid x:Name="SharedPage"
+            IsVisible="False"
+            RowDefinitions="Auto,Auto,Auto,Auto,*">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel>
+            <TextBlock Text="共享素材" Classes="pageTitle" />
+            <TextBlock x:Name="CloudSummaryText" Text="团队云端素材" Classes="muted" Margin="0,4,0,0" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+            <ToggleButton x:Name="CloudFilterToggleButton" Classes="filterChip moduleToggle" Click="CloudFilterToggle_OnClick">展开筛选</ToggleButton>
+            <Button Classes="quiet" Click="RefreshCloud_OnClick">刷新</Button>
+            <Button Classes="quiet" Click="ChooseCloudFolderUpload_OnClick">上传文件夹</Button>
+            <Button Classes="accent" Click="ChooseCloudUpload_OnClick">上传素材</Button>
+          </StackPanel>
+        </Grid>
+
+        <Border x:Name="SharedUploadDropTarget"
+                Grid.Row="1"
+                Height="68"
+                Margin="0,12,0,4"
+                 Padding="16,0"
+                 Classes="dropTarget"
+                 PointerPressed="UploadDropTarget_OnPointerPressed"
+                 PointerMoved="UploadDropTarget_OnPointerMoved"
+                 PointerReleased="SharedUploadDropTarget_OnPointerReleased"
+                 DragDrop.AllowDrop="True"
+                DragDrop.DragOver="SharedUploadDropTarget_OnDragOver"
+                DragDrop.DragLeave="SharedUploadDropTarget_OnDragLeave"
+                DragDrop.Drop="SharedUploadDropTarget_OnDrop">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+            <TextBlock Text="+"
+                       FontSize="24"
+                       Foreground="{DynamicResource AccentBrush}"
+                       VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+              <TextBlock Text="拖入文件上传云端" FontWeight="SemiBold" />
+              <TextBlock Text="释放后打开上传配置，支持批量素材与 .cube LUT"
+                         Classes="muted"
+                         FontSize="11"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <ScrollViewer x:Name="CloudCategoryFilterPanel" Grid.Row="2"
+                      Margin="0,16,0,8"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button x:Name="CloudAllCategoryButton" Tag="all" Classes="filterChip selected" Click="CloudCategoryQuickFilter_OnClick">全部</Button>
+            <Button x:Name="CloudBgmCategoryButton" Tag="bgm" Classes="filterChip" Click="CloudCategoryQuickFilter_OnClick">BGM</Button>
+            <Button x:Name="CloudSoundCategoryButton" Tag="sound" Classes="filterChip" Click="CloudCategoryQuickFilter_OnClick">音效</Button>
+            <Button x:Name="CloudVideoCategoryButton" Tag="video" Classes="filterChip" Click="CloudCategoryQuickFilter_OnClick">视频</Button>
+            <Button x:Name="CloudImageCategoryButton" Tag="image" Classes="filterChip" Click="CloudCategoryQuickFilter_OnClick">图片</Button>
+            <Button x:Name="CloudLutCategoryButton" Tag="lut" Classes="filterChip" Click="CloudCategoryQuickFilter_OnClick">LUT</Button>
+          </StackPanel>
+        </ScrollViewer>
+
+        <Grid x:Name="CloudAssetFilterPanel" Grid.Row="3" RowDefinitions="Auto,Auto,Auto,Auto">
+          <TextBox x:Name="CloudSearchBox"
+                   Margin="0,0,0,8"
+                   Watermark="搜索名称、标签、大类型或备注"
+                   TextChanged="CloudFilter_OnChanged" />
+
+          <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,0,0,8">
+            <TextBlock Text="标签" Classes="muted" VerticalAlignment="Center" Margin="2,0,4,0" />
+            <Button x:Name="CloudTagFilterButton"
+                    Grid.Column="1"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    ToolTip.Tip="多选时匹配包含任意一个已选标签的素材">
+              <Button.Flyout>
+                <Flyout FlyoutPresenterClasses="tagFilterFlyout">
+                  <Border Classes="popupSurface" Width="320" Padding="12">
+                    <StackPanel Spacing="10">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="标签筛选" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <ToggleButton x:Name="CloudTagMultiSelectButton"
+                                      Grid.Column="1"
+                                      Classes="filterChip"
+                                      ToolTip.Tip="开启后可选择多个标签，并匹配包含任意一个已选标签的素材"
+                                      Click="CloudTagMode_OnClick">多选</ToggleButton>
+                      </Grid>
+                      <ScrollViewer MaxHeight="260"
+                                    HorizontalScrollBarVisibility="Disabled"
+                                    VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding CloudTagFilters}">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:CloudTagFilterItemViewModel}">
+                              <ToggleButton Width="294"
+                                            HorizontalContentAlignment="Left"
+                                            Classes="filterChip"
+                                            IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                            Click="CloudTagFilter_OnClick">
+                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                              </ToggleButton>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                    </StackPanel>
+                  </Border>
+                </Flyout>
+              </Button.Flyout>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock x:Name="CloudTagFilterLabel"
+                           Text="全部标签"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+                <PathIcon Grid.Column="1"
+                          Width="16"
+                          Height="16"
+                          Margin="10,0,0,0"
+                          VerticalAlignment="Center"
+                          Data="M7,10 L12,15 L17,10 Z" />
+              </Grid>
+            </Button>
+          </Grid>
+
+          <Grid Grid.Row="2" ColumnDefinitions="Auto,*,*,*,Auto" ColumnSpacing="8" Margin="0,0,0,14">
+            <TextBlock Text="上传日期" Classes="muted" VerticalAlignment="Center" Margin="2,0,4,0" />
+            <CalendarDatePicker x:Name="CloudFromDateFilter" Grid.Column="1" Watermark="开始日期" ToolTip.Tip="上传日期起点" SelectedDateChanged="CloudDateFilter_OnChanged" />
+            <CalendarDatePicker x:Name="CloudToDateFilter" Grid.Column="2" Watermark="结束日期" ToolTip.Tip="上传日期终点" SelectedDateChanged="CloudDateFilter_OnChanged" />
+            <ComboBox x:Name="CloudSortFilter" Grid.Column="3" SelectedIndex="2" SelectionChanged="CloudFilter_OnChanged">
+              <ComboBoxItem Content="最新上传" />
+              <ComboBoxItem Content="最早上传" />
+              <ComboBoxItem Content="名称 A-Z" />
+              <ComboBoxItem Content="名称 Z-A" />
+              <ComboBoxItem Content="文件最大" />
+            </ComboBox>
+            <StackPanel Grid.Column="4"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Spacing="6">
+              <Button x:Name="CloudGridViewButton" Tag="Grid" Classes="viewMode selected" ToolTip.Tip="方格展示" Click="CloudViewMode_OnClick">
+                <PathIcon Width="18" Height="18" Data="M3,3 L10,3 L10,10 L3,10 Z M14,3 L21,3 L21,10 L14,10 Z M3,14 L10,14 L10,21 L3,21 Z M14,14 L21,14 L21,21 L14,21 Z" />
+              </Button>
+              <Button x:Name="CloudListViewButton" Tag="List" Classes="viewMode" ToolTip.Tip="列表展示" Click="CloudViewMode_OnClick">
+                <PathIcon Width="18" Height="18" Data="M3,5 L6,5 L6,8 L3,8 Z M9,5 L21,5 L21,8 L9,8 Z M3,11 L6,11 L6,14 L3,14 Z M9,11 L21,11 L21,14 L9,14 Z M3,17 L6,17 L6,20 L3,20 Z M9,17 L21,17 L21,20 L9,20 Z" />
+              </Button>
+            </StackPanel>
+          </Grid>
+
+          <Border x:Name="CloudBatchToolbar"
+                  Grid.Row="3"
+                  IsVisible="False"
+                  Margin="0,0,0,14"
+                  Padding="12,9"
+                  CornerRadius="8"
+                  Background="{DynamicResource SurfaceBrush}"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="1">
+          <Grid RowDefinitions="Auto,Auto"
+                ColumnDefinitions="Auto,*"
+                ColumnSpacing="12"
+                RowSpacing="8">
+            <CheckBox x:Name="CloudSelectAllCheckBox"
+                      Content="全选当前结果"
+                      IsThreeState="True"
+                      VerticalAlignment="Center"
+                      Checked="CloudSelectAll_OnChanged"
+                      Unchecked="CloudSelectAll_OnChanged" />
+            <TextBlock x:Name="CloudSelectionSummaryText"
+                       Grid.Column="1"
+                       Text="未选择素材"
+                       Classes="muted"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Center" />
+            <StackPanel Grid.Row="1"
+                        Grid.ColumnSpan="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="8">
+              <Button x:Name="BatchDownloadCloudAssetsButton"
+                      Classes="quiet"
+                      IsEnabled="False"
+                      Click="BatchDownloadCloudAssets_OnClick">批量下载</Button>
+              <Button x:Name="BatchTagCloudAssetsButton"
+                      Classes="quiet"
+                      IsEnabled="False"
+                      Click="BatchTagCloudAssets_OnClick">批量加标签</Button>
+              <Button x:Name="BatchMoveCloudAssetsButton"
+                      Classes="quiet"
+                      IsEnabled="False"
+                      Click="BatchMoveCloudAssets_OnClick">移动到文件夹</Button>
+              <Button x:Name="BatchRecycleCloudAssetsButton"
+                      Classes="quiet"
+                      IsEnabled="False"
+                      Foreground="{DynamicResource ErrorBrush}"
+                      Click="BatchRecycleCloudAssets_OnClick">移至回收站</Button>
+            </StackPanel>
+          </Grid>
+          </Border>
+        </Grid>
+
+        <Grid x:Name="CloudLutViewModePanel"
+              Grid.Row="3"
+              IsVisible="False"
+              Margin="0,0,0,14"
+              RowDefinitions="Auto,Auto"
+              RowSpacing="10">
+          <StackPanel Orientation="Horizontal"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Center"
+                      Spacing="6">
+            <Button x:Name="CloudLutGridViewButton"
+                    Tag="Grid"
+                    Classes="viewMode selected"
+                    ToolTip.Tip="方格展示"
+                    Click="CloudViewMode_OnClick">
+              <PathIcon Width="18" Height="18" Data="M3,3 L10,3 L10,10 L3,10 Z M14,3 L21,3 L21,10 L14,10 Z M3,14 L10,14 L10,21 L3,21 Z M14,14 L21,14 L21,21 L14,21 Z" />
+            </Button>
+            <Button x:Name="CloudLutListViewButton"
+                    Tag="List"
+                    Classes="viewMode"
+                    ToolTip.Tip="列表展示"
+                    Click="CloudViewMode_OnClick">
+              <PathIcon Width="18" Height="18" Data="M3,5 L6,5 L6,8 L3,8 Z M9,5 L21,5 L21,8 L9,8 Z M3,11 L6,11 L6,14 L3,14 Z M9,11 L21,11 L21,14 L9,14 Z M3,17 L6,17 L6,20 L3,20 Z M9,17 L21,17 L21,20 L9,20 Z" />
+            </Button>
+          </StackPanel>
+          <Border Grid.Row="1"
+                  Padding="12,9"
+                  CornerRadius="8"
+                  Background="{DynamicResource SurfaceBrush}"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="1">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+              <CheckBox x:Name="CloudLutSelectAllCheckBox"
+                        Content="全选当前结果"
+                        IsThreeState="True"
+                        VerticalAlignment="Center"
+                        Checked="CloudLutSelectAll_OnChanged"
+                        Unchecked="CloudLutSelectAll_OnChanged" />
+              <TextBlock x:Name="CloudLutSelectionSummaryText"
+                         Grid.Column="1"
+                         Text="未选择 LUT"
+                         Classes="muted"
+                         VerticalAlignment="Center" />
+              <Button x:Name="BatchDownloadCloudLutsButton"
+                      Grid.Column="2"
+                      Classes="accent"
+                      IsEnabled="False"
+                      Click="BatchDownloadCloudLuts_OnClick">批量下载</Button>
+            </Grid>
+          </Border>
+        </Grid>
+
+        <Grid x:Name="CloudContentsGrid" Grid.Row="4">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="156" MinHeight="156" />
+            <RowDefinition Height="12" />
+            <RowDefinition Height="*" MinHeight="120" />
+          </Grid.RowDefinitions>
+          <Border x:Name="CloudLoginState"
+                  Grid.RowSpan="4"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="8"
+                  Background="{DynamicResource SurfaceBrush}">
+            <Border HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Padding="22,18"
+                    CornerRadius="8"
+                    Background="{DynamicResource SurfaceRaisedBrush}">
+              <StackPanel HorizontalAlignment="Center" Spacing="12">
+                <TextBlock Text="云端素材将在登录后显示" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                <Button Classes="accent" HorizontalAlignment="Center" Click="ConnectServer_OnClick">连接服务器</Button>
+              </StackPanel>
+            </Border>
+          </Border>
+
+          <Border Grid.Row="0" Background="{DynamicResource AccentSoftBrush}" CornerRadius="8" Padding="14,10" Margin="0,0,0,14">
+            <Grid>
+              <TextBlock x:Name="CloudConnectionText" Text="服务器未连接" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" />
+            </Grid>
+          </Border>
+
+          <Grid x:Name="CloudDirectoryHeader"
+                Grid.Row="1"
+                Margin="0,0,0,8"
+                RowDefinitions="Auto,Auto,*"
+                RowSpacing="8">
+            <Grid ColumnDefinitions="*,Auto" Margin="2,0">
+              <TextBlock Text="文件夹" Classes="sectionTitle" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1"
+                         Text="{Binding CurrentCloudFolderNodes.Count}"
+                         Classes="muted"
+                         VerticalAlignment="Center" />
+            </Grid>
+
+            <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+              <Button x:Name="CloudFolderBackButton"
+                      MinWidth="58"
+                      Height="34"
+                      Padding="0"
+                      Classes="quiet"
+                      ToolTip.Tip="返回上一级"
+                      Click="CloudFolderBack_OnClick">返回</Button>
+              <Border Grid.Column="1"
+                      Padding="11,7"
+                      CornerRadius="8"
+                      Background="{DynamicResource SurfaceBrush}"
+                      BorderBrush="{DynamicResource BorderBrush}"
+                      BorderThickness="1">
+                <TextBlock x:Name="CloudFolderBreadcrumbText"
+                           Text="全部文件夹"
+                           TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+              </Border>
+              <CheckBox x:Name="CloudRecursiveSearchToggle"
+                        Grid.Column="2"
+                        Content="搜索所有子文件夹"
+                        VerticalAlignment="Center"
+                        Checked="CloudRecursiveSearch_OnChanged"
+                        Unchecked="CloudRecursiveSearch_OnChanged" />
+            </Grid>
+
+            <Grid Grid.Row="2">
+              <ScrollViewer
+                            HorizontalScrollBarVisibility="Disabled"
+                            VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding CurrentCloudFolderNodes}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:CloudFolderNodeViewModel}">
+                      <Button Width="220"
+                              Height="58"
+                              Margin="0,0,8,8"
+                              Padding="12,8"
+                              Classes="quiet folderDropNode"
+                              HorizontalContentAlignment="Stretch"
+                              Click="CloudFolderCard_OnClick"
+                              ContextRequested="CloudFolderNode_OnContextRequested"
+                              DragDrop.AllowDrop="True"
+                              DragDrop.DragOver="CloudFolderNode_OnDragOver"
+                              DragDrop.DragLeave="CloudFolderNode_OnDragLeave"
+                              DragDrop.Drop="CloudFolderNode_OnDrop">
+                        <Grid ColumnDefinitions="34,*" ColumnSpacing="9">
+                          <PathIcon Width="22"
+                                    Height="22"
+                                    VerticalAlignment="Center"
+                                    Foreground="{DynamicResource AccentBrush}"
+                                    IsHitTestVisible="False"
+                                    Data="M3,5 L9,5 L11,7 L21,7 L21,19 L3,19 Z" />
+                          <StackPanel Grid.Column="1"
+                                      VerticalAlignment="Center"
+                                      IsHitTestVisible="False">
+                            <TextBlock Text="{Binding Name}"
+                                       FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding CreatorLabel}"
+                                       Classes="muted"
+                                       FontSize="10"
+                                       TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+              <TextBlock x:Name="CloudCurrentFoldersEmptyText"
+                         Text="当前目录没有子文件夹"
+                         Classes="muted"
+                         Margin="4,5"
+                         IsVisible="False" />
+            </Grid>
+          </Grid>
+
+          <Border Grid.Row="2" Height="2"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Center"
+                    Background="{DynamicResource SplitterBrush}"
+                    IsHitTestVisible="False" />
+          <GridSplitter x:Name="CloudFolderHeightSplitter" Grid.Row="2"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          ResizeDirection="Rows"
+                          ResizeBehavior="PreviousAndNext"
+                          Cursor="SizeNorthSouth"
+                          Background="Transparent"
+                          ToolTip.Tip="上下拖动调整文件夹区域高度" />
+
+          <Grid Grid.Row="3" RowDefinitions="Auto,*">
+            <Grid x:Name="CloudAssetSectionHeader"
+                  Margin="0,0,0,10">
+              <Grid ColumnDefinitions="*,Auto" Margin="2,0">
+                <TextBlock Text="素材" Classes="sectionTitle" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding VisibleCloudAssets.Count}"
+                           Classes="muted"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </Grid>
+
+            <Grid Grid.Row="1">
+            <ScrollViewer x:Name="CloudAssetScroll"
+                          IsVisible="False"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding VisibleCloudAssets}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="{x:Type vm:CloudAssetCardViewModel}">
+                    <Border Width="{Binding CardWidth}"
+                            Classes="assetTile"
+                            Height="204"
+                            Margin="0,0,12,12"
+                            CornerRadius="8"
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            PointerEntered="CloudAssetCard_OnPointerEntered"
+                             PointerExited="CloudAssetCard_OnPointerExited"
+                             PointerPressed="CloudAssetCard_OnPointerPressed"
+                             PointerReleased="AssetCard_OnPointerReleased"
+                             PointerMoved="CloudAssetCard_OnPointerMoved"
+                             ContextRequested="CloudAsset_OnContextRequested"
+                             DoubleTapped="CloudAssetCard_OnDoubleTapped">
+                      <Grid RowDefinitions="116,*">
+                        <Border Grid.RowSpan="2"
+                                Margin="1"
+                                CornerRadius="7"
+                                BorderBrush="{DynamicResource AccentBrush}"
+                                BorderThickness="2"
+                                IsHitTestVisible="False"
+                                IsVisible="{Binding IsHighlighted}"
+                                ZIndex="10" />
+                        <CheckBox Grid.RowSpan="2"
+                                  Width="22"
+                                  Height="22"
+                                  Margin="9,9,0,0"
+                                  HorizontalAlignment="Left"
+                                  VerticalAlignment="Top"
+                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                  Checked="CloudAssetSelection_OnChanged"
+                                  Unchecked="CloudAssetSelection_OnChanged"
+                                  ToolTip.Tip="选择素材"
+                                  ZIndex="11" />
+                        <Border Background="{DynamicResource SurfaceRaisedBrush}"
+                                CornerRadius="7,7,0,0"
+                                ClipToBounds="True">
+                          <Grid>
+                            <Image Source="{Binding Thumbnail}" IsVisible="{Binding HasThumbnail}" Stretch="UniformToFill" />
+                            <TextBlock Text="{Binding Initial}" IsVisible="{Binding ShowPlaceholder}" FontSize="38" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" Opacity="0.7" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8" Padding="6,3" Classes="mediaBadge">
+                              <TextBlock Text="{Binding Extension}" Classes="mediaBadgeText" FontSize="10" FontWeight="Bold" />
+                            </Border>
+                            <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="8" Padding="6,3" Classes="mediaBadge">
+                              <TextBlock Text="{Binding CategoryLabel}" Classes="mediaBadgeText" FontSize="10" />
+                            </Border>
+                          </Grid>
+                        </Border>
+                        <StackPanel Grid.Row="1" Margin="10,9" Spacing="3">
+                          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding TagsLabel}" TextTrimming="CharacterEllipsis" Classes="muted" FontSize="11" />
+                          <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding UploaderLabel}" TextTrimming="CharacterEllipsis" Classes="muted" FontSize="10" />
+                            <TextBlock Grid.Column="1" Text="{Binding SizeLabel}" Classes="muted" FontSize="10" />
+                          </Grid>
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="CloudAssetListScroll"
+                          IsVisible="False"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding VisibleCloudAssets}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="{x:Type vm:CloudAssetCardViewModel}">
+                    <Border Height="146"
+                            Classes="assetTile"
+                            Margin="0,0,0,8"
+                            CornerRadius="8"
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            PointerEntered="CloudAssetCard_OnPointerEntered"
+                             PointerExited="CloudAssetCard_OnPointerExited"
+                             PointerPressed="CloudAssetCard_OnPointerPressed"
+                             PointerReleased="AssetCard_OnPointerReleased"
+                             PointerMoved="CloudAssetCard_OnPointerMoved"
+                             ContextRequested="CloudAsset_OnContextRequested"
+                             DoubleTapped="CloudAssetCard_OnDoubleTapped">
+                      <Grid ColumnDefinitions="40,*">
+                        <Border Grid.ColumnSpan="2"
+                                Margin="1"
+                                CornerRadius="7"
+                                BorderBrush="{DynamicResource AccentBrush}"
+                                BorderThickness="2"
+                                IsHitTestVisible="False"
+                                IsVisible="{Binding IsHighlighted}"
+                                ZIndex="10" />
+                        <CheckBox Width="22"
+                                  Height="22"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                  Checked="CloudAssetSelection_OnChanged"
+                                  Unchecked="CloudAssetSelection_OnChanged"
+                                  ToolTip.Tip="选择素材"
+                                  ZIndex="11" />
+                        <Grid Grid.Column="1" Margin="0,10,12,10" RowDefinitions="Auto,Auto,*" RowSpacing="5">
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <TextBlock Text="{Binding Name}"
+                                       TextTrimming="CharacterEllipsis"
+                                       FontWeight="SemiBold" />
+                            <Border Grid.Column="1" Padding="6,2" Classes="mediaBadge">
+                              <TextBlock Text="{Binding Extension}" Classes="mediaBadgeText" FontSize="9" FontWeight="Bold" />
+                            </Border>
+                          </Grid>
+                          <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <TextBlock Text="{Binding TagsLabel}" TextTrimming="CharacterEllipsis" Classes="muted" FontSize="10" />
+                            <TextBlock Grid.Column="1" Text="{Binding SizeLabel}" Classes="muted" FontSize="10" />
+                          </Grid>
+                          <Border Grid.Row="2"
+                                  Margin="0,2,0,0"
+                                  MinHeight="76"
+                                  CornerRadius="7"
+                                  ClipToBounds="True"
+                                  Background="{DynamicResource SurfaceRaisedBrush}">
+                            <Grid>
+                              <Image Source="{Binding Thumbnail}" IsVisible="{Binding HasThumbnail}" Stretch="{Binding ListThumbnailStretch}" />
+                              <TextBlock Text="{Binding Initial}"
+                                         IsVisible="{Binding ShowPlaceholder}"
+                                         FontSize="24"
+                                         FontWeight="Bold"
+                                         Foreground="{DynamicResource AccentBrush}"
+                                         Opacity="0.72"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center" />
+                              <Border HorizontalAlignment="Right"
+                                      VerticalAlignment="Top"
+                                      Margin="7"
+                                      Padding="6,2"
+                                      Classes="mediaBadge"
+                                      IsVisible="{Binding IsTimedMedia}">
+                                <TextBlock Text="{Binding DurationLabel}" Classes="mediaBadgeText" FontSize="9" FontWeight="SemiBold" />
+                              </Border>
+                              <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="7" Padding="6,2" Classes="mediaBadge">
+                                <TextBlock Text="{Binding UploaderLabel}" Classes="mediaBadgeText" FontSize="9" />
+                              </Border>
+                              <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="7" Padding="6,2" Classes="mediaBadge">
+                                <TextBlock Text="{Binding CategoryLabel}" Classes="mediaBadgeText" FontSize="9" />
+                              </Border>
+                            </Grid>
+                          </Border>
+                        </Grid>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+
+            <TextBlock x:Name="CloudEmptyState"
+                       Text="当前文件夹暂无符合筛选条件的素材"
+                       IsVisible="False"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextAlignment="Center"
+                       Classes="muted" />
+
+            <ScrollViewer x:Name="CloudLutScroll"
+                          IsVisible="False"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding SharedCloudLuts}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="{x:Type vm:ProfileLutCardViewModel}">
+                    <Border Width="242"
+                            Height="142"
+                            Margin="0,0,12,12"
+                            Padding="14"
+                            Classes="glass"
+                            Tapped="SharedCloudLutCard_OnTapped"
+                            ToolTip.Tip="点击查看团队 LUT">
+                      <Grid RowDefinitions="Auto,*,Auto" RowSpacing="7">
+                        <Border Grid.RowSpan="3"
+                                Margin="-13"
+                                CornerRadius="7"
+                                BorderBrush="{DynamicResource AccentBrush}"
+                                BorderThickness="2"
+                                IsHitTestVisible="False"
+                                IsVisible="{Binding IsSelected}"
+                                ZIndex="10" />
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <Border Grid.Column="1" Padding="6,3" CornerRadius="6" Background="{DynamicResource AccentSoftBrush}">
+                            <TextBlock Text="LUT" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold" />
+                          </Border>
+                          <CheckBox Grid.Column="2"
+                                    IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                    Checked="SharedCloudLutSelection_OnChanged"
+                                    Unchecked="SharedCloudLutSelection_OnChanged"
+                                    ToolTip.Tip="选择 LUT"
+                                    ZIndex="11" />
+                        </Grid>
+                        <TextBlock Grid.Row="1" Text="{Binding NoteLabel}" Classes="muted" TextWrapping="Wrap" MaxLines="2" />
+                        <StackPanel Grid.Row="2" Spacing="2">
+                          <TextBlock Text="{Binding UploaderLabel}" Classes="muted" FontSize="10" TextTrimming="CharacterEllipsis" />
+                          <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding FileLabel}" Classes="muted" FontSize="10" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="1" Text="{Binding UpdatedLabel}" Classes="muted" FontSize="10" />
+                          </Grid>
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="CloudLutListScroll"
+                          IsVisible="False"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding SharedCloudLuts}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="{x:Type vm:ProfileLutCardViewModel}">
+                    <Border Height="86"
+                            Margin="0,0,0,8"
+                            Padding="14,10"
+                            Classes="glass"
+                            Tapped="SharedCloudLutCard_OnTapped"
+                            ToolTip.Tip="点击查看团队 LUT">
+                      <Grid ColumnDefinitions="40,*,Auto" ColumnSpacing="18">
+                        <Border Grid.ColumnSpan="3"
+                                Margin="-13,-9"
+                                CornerRadius="7"
+                                BorderBrush="{DynamicResource AccentBrush}"
+                                BorderThickness="2"
+                                IsHitTestVisible="False"
+                                IsVisible="{Binding IsSelected}"
+                                ZIndex="10" />
+                        <CheckBox HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                  Checked="SharedCloudLutSelection_OnChanged"
+                                  Unchecked="SharedCloudLutSelection_OnChanged"
+                                  ToolTip.Tip="选择 LUT"
+                                  ZIndex="11" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding NoteLabel}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding UploaderLabel}" Classes="muted" FontSize="10" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2"
+                                    MinWidth="220"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Spacing="4">
+                          <Border Padding="6,3"
+                                  CornerRadius="6"
+                                  Background="{DynamicResource AccentSoftBrush}"
+                                  HorizontalAlignment="Right">
+                            <TextBlock Text="LUT" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold" />
+                          </Border>
+                          <TextBlock Text="{Binding FileLabel}" Classes="muted" FontSize="10" TextTrimming="CharacterEllipsis" HorizontalAlignment="Right" />
+                          <TextBlock Text="{Binding UpdatedLabel}" Classes="muted" FontSize="10" HorizontalAlignment="Right" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+
+            <TextBlock x:Name="CloudLutEmptyState"
+                       Text="团队云端 LUT 库为空"
+                       IsVisible="False"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextAlignment="Center"
+                       Classes="muted" />
+            </Grid>
+          </Grid>
+        </Grid>
+      </Grid>
+
+      <Grid x:Name="PlayerPage" IsVisible="False" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="14">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel>
+            <TextBlock Text="播放器" Classes="pageTitle" />
+            <TextBlock x:Name="PlayerStatusText" Text="双击素材或打开媒体文件开始播放" Classes="muted" Margin="0,4,0,0" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+            <Button Classes="quiet" Click="PlaybackShortcuts_OnClick">快捷键</Button>
+            <Button Classes="quiet" Click="OpenPlayerFiles_OnClick">打开文件</Button>
+            <Button Classes="quiet" Click="OpenPlayerFolder_OnClick">打开文件夹</Button>
+            <Button Classes="quiet" Click="ClearPlayerQueue_OnClick">清空队列</Button>
+          </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,300" ColumnSpacing="14">
+          <Border Classes="glass" Padding="1" ClipToBounds="True">
+            <Grid>
+              <controls:MpvVideoHost x:Name="PlayerVideoHost" />
+              <Border x:Name="PlayerEndedBackdrop"
+                      Background="#000000"
+                      IsVisible="False"
+                      IsHitTestVisible="False" />
+              <Grid x:Name="PlayerPlaceholder" Background="{DynamicResource SurfaceRaisedBrush}" IsHitTestVisible="False">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+                  <PathIcon x:Name="PlayerPlaceholderGlyph" Width="46" Height="46" Foreground="{DynamicResource AccentBrush}" Data="M5,3 L19,12 L5,21 Z" />
+                  <TextBlock x:Name="PlayerPlaceholderText" Text="尚未打开媒体" Classes="muted" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Grid>
+              <Border x:Name="PlayerArtworkViewport"
+                      Background="{DynamicResource SurfaceRaisedBrush}"
+                      ClipToBounds="True"
+                      IsVisible="False"
+                      PointerWheelChanged="PlayerArtworkViewport_OnPointerWheelChanged"
+                      PointerPressed="PlayerArtworkViewport_OnPointerPressed"
+                      PointerMoved="PlayerArtworkViewport_OnPointerMoved"
+                      PointerReleased="PlayerArtworkViewport_OnPointerReleased"
+                      PointerCaptureLost="PlayerArtworkViewport_OnPointerCaptureLost">
+                <Image x:Name="PlayerArtworkImage"
+                       Stretch="Uniform"
+                       Margin="18"
+                       RenderTransformOrigin="0.5,0.5" />
+              </Border>
+              <Border x:Name="PlayerImageToolsPanel"
+                      IsVisible="False"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Bottom"
+                      Margin="0,0,0,14"
+                      Padding="8,6"
+                      CornerRadius="8"
+                      Background="{DynamicResource SurfaceBrush}"
+                      BorderBrush="{DynamicResource BorderBrush}"
+                      BorderThickness="1">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Button Width="34" Height="30" MinHeight="30" Padding="0" Classes="quiet" Click="PlayerImageZoomOut_OnClick" ToolTip.Tip="缩小图片">−</Button>
+                  <TextBlock x:Name="PlayerImageZoomText" Text="100%" MinWidth="52" TextAlignment="Center" VerticalAlignment="Center" />
+                  <Button Width="34" Height="30" MinHeight="30" Padding="0" Classes="quiet" Click="PlayerImageZoomIn_OnClick" ToolTip.Tip="放大图片">+</Button>
+                  <Button Height="30" MinHeight="30" Padding="10,0" Classes="quiet" Click="PlayerImageReset_OnClick">复位图片</Button>
+                </StackPanel>
+              </Border>
+            </Grid>
+          </Border>
+
+          <Border Grid.Column="1" Classes="glass" Padding="14">
+            <Grid RowDefinitions="Auto,*" RowSpacing="10">
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <Button x:Name="PlayerQueuePaneButton"
+                        Tag="queue"
+                        Classes="filterChip selected"
+                        Click="PlayerSidePane_OnClick">播放队列</Button>
+                <Button x:Name="PlayerMarkersPaneButton"
+                        Grid.Column="1"
+                        Tag="markers"
+                        Classes="filterChip"
+                        Click="PlayerSidePane_OnClick">标记列表</Button>
+              </Grid>
+
+              <Grid x:Name="PlayerQueuePane" Grid.Row="1" RowDefinitions="Auto,*,Auto" RowSpacing="10">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                  <TextBlock Text="播放队列" Classes="sectionTitle" VerticalAlignment="Center" />
+                  <TextBlock x:Name="PlayerQueueCountText" Grid.Column="1" Text="0 项" Classes="muted" VerticalAlignment="Center" />
+                  <Button Grid.Column="2"
+                          MinHeight="30"
+                          Padding="10,4"
+                          Classes="quiet"
+                          Click="AddPlayerQueueItems_OnClick">加入队列</Button>
+                </Grid>
+                <ListBox x:Name="PlayerQueueList"
+                         Grid.Row="1"
+                         ItemsSource="{Binding PlayerQueueItems}"
+                         SelectionChanged="PlayerQueueList_OnSelectionChanged"
+                         Background="Transparent"
+                         BorderThickness="0">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <Grid ColumnDefinitions="28,*,Auto" Margin="2,5" ToolTip.Tip="{Binding Source}">
+                        <TextBlock Text="▶" Foreground="{DynamicResource AccentBrush}" IsVisible="{Binding IsCurrent}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Margin="6,0" Spacing="2">
+                          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding KindLabel}" Classes="muted" FontSize="10" />
+                        </StackPanel>
+                        <Button Grid.Column="2" Width="28" Height="28" MinHeight="28" Padding="0" Classes="quiet" Tag="{Binding Id}" Click="RemovePlayerQueueItem_OnClick" ToolTip.Tip="从队列移除">×</Button>
+                      </Grid>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <Button Grid.Row="2" Classes="quiet" HorizontalAlignment="Stretch" Click="ShowRecentPlayback_OnClick">最近播放</Button>
+              </Grid>
+
+              <Grid x:Name="PlayerMarkerPane"
+                    Grid.Row="1"
+                    RowDefinitions="Auto,*,Auto"
+                    RowSpacing="10"
+                    IsVisible="False">
+                <ComboBox x:Name="PlayerMarkerSetPicker"
+                          ItemsSource="{Binding PlayerMarkerSets}"
+                          SelectionChanged="PlayerMarkerSetPicker_OnSelectionChanged"
+                          PlaceholderText="选择标记集" />
+                <Grid Grid.Row="1">
+                  <ListBox x:Name="PlayerMarkerList"
+                           ItemsSource="{Binding PlayerMarkers}"
+                           DoubleTapped="PlayerMarkerList_OnDoubleTapped">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate DataType="{x:Type vm:PlayerMarkerItemViewModel}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" ToolTip.Tip="{Binding NoteLabel}">
+                          <TextBlock Text="{Binding TimeLabel}"
+                                     Foreground="{DynamicResource AccentBrush}"
+                                     FontWeight="SemiBold"
+                                     VerticalAlignment="Center" />
+                          <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Text="{Binding NameLabel}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding NoteLabel}" Classes="muted" FontSize="10" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                        </Grid>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                  <TextBlock x:Name="PlayerMarkerEmptyText"
+                             Text="当前素材暂无可显示标记"
+                             Classes="muted"
+                             TextAlignment="Center"
+                             TextWrapping="Wrap"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center" />
+                </Grid>
+                <Button x:Name="PlayerManageMarkersButton"
+                        Grid.Row="2"
+                        Classes="quiet"
+                        HorizontalAlignment="Stretch"
+                        Click="PlayerManageMarkers_OnClick">管理标记</Button>
+              </Grid>
+            </Grid>
+          </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Classes="glass" Padding="14">
+          <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+            <Border x:Name="PlayerTimelinePreview" Height="54" CornerRadius="7" ClipToBounds="True" Background="{DynamicResource SurfaceRaisedBrush}" IsVisible="False">
+              <Image x:Name="PlayerTimelineImage" Stretch="UniformToFill" />
+            </Border>
+            <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
+              <Button Width="40" Height="38" Padding="0" Classes="quiet" Click="PlayerPrevious_OnClick" ToolTip.Tip="上一项">◀</Button>
+              <Button x:Name="PlayerPlayPauseButton" Grid.Column="1" Width="48" Height="38" Padding="0" Classes="accent" Click="PlayerPlayPause_OnClick" ToolTip.Tip="播放或暂停">▶</Button>
+              <Button Grid.Column="2" Width="40" Height="38" Padding="0" Classes="quiet" Click="PlayerNext_OnClick" ToolTip.Tip="下一项">▶|</Button>
+              <Grid Grid.Column="3">
+                <Slider x:Name="PlayerPositionSlider" Minimum="0" Maximum="1" ValueChanged="PlayerPositionSlider_OnValueChanged" />
+                <Canvas x:Name="PlayerTimelineMarkersCanvas"
+                        Height="16"
+                        Margin="9,0"
+                        VerticalAlignment="Center"
+                        IsHitTestVisible="False"
+                        SizeChanged="PlayerTimelineMarkersCanvas_OnSizeChanged"
+                        ZIndex="2" />
+              </Grid>
+              <TextBlock x:Name="PlayerTimeText" Grid.Column="4" Text="00:00 / 00:00" MinWidth="112" TextAlignment="Right" VerticalAlignment="Center" Classes="muted" />
+            </Grid>
+            <WrapPanel Grid.Row="2" Orientation="Horizontal">
+              <TextBlock Text="总音量" Margin="0,0,8,8" VerticalAlignment="Center" Classes="muted" />
+              <Slider x:Name="MasterVolumeSlider" Width="140" Margin="0,0,8,8" Minimum="0" Maximum="100" Value="40" ValueChanged="MasterVolumeSlider_OnValueChanged" />
+              <TextBlock x:Name="MasterVolumeText" Text="40%" MinWidth="42" Margin="0,0,8,8" VerticalAlignment="Center" Classes="muted" />
+              <ComboBox x:Name="PlaybackSpeedPicker" Width="100" Margin="0,0,8,8" SelectedIndex="3" SelectionChanged="PlaybackSpeedPicker_OnSelectionChanged">
+                <ComboBoxItem Content="0.5×" Tag="0.5" /><ComboBoxItem Content="0.75×" Tag="0.75" /><ComboBoxItem Content="0.9×" Tag="0.9" /><ComboBoxItem Content="1.0×" Tag="1" /><ComboBoxItem Content="1.25×" Tag="1.25" /><ComboBoxItem Content="1.5×" Tag="1.5" /><ComboBoxItem Content="2.0×" Tag="2" />
+              </ComboBox>
+              <Button x:Name="PlayerLoopButton" Margin="0,0,8,8" Classes="quiet" Click="PlayerLoop_OnClick">循环</Button>
+              <Button x:Name="PlayerShuffleButton" Margin="0,0,8,8" Classes="quiet" Click="PlayerShuffle_OnClick">随机</Button>
+              <Button Margin="0,0,8,8" Classes="quiet" Click="PlayerFrameBack_OnClick" ToolTip.Tip="后退一帧">−1 帧</Button>
+              <Button Margin="0,0,8,8" Classes="quiet" Click="PlayerFrameForward_OnClick" ToolTip.Tip="前进一帧">+1 帧</Button>
+              <Button Margin="0,0,0,8" Classes="quiet" Click="PlayerFullscreen_OnClick">全屏</Button>
+            </WrapPanel>
+          </Grid>
+        </Border>
+
+        <Border Grid.Row="3" Classes="glass" Padding="14">
+          <StackPanel Spacing="8">
+            <WrapPanel>
+              <Button Classes="accent" Margin="0,0,8,8" Click="PlayerAddMarker_OnClick">在当前时间标记</Button>
+              <Button Classes="quiet" Margin="0,0,8,8" Click="PlayerScreenshot_OnClick">截图</Button>
+              <Button Classes="quiet" Margin="0,0,8,8" Click="PlayerMediaInfo_OnClick">媒体信息</Button>
+              <Button x:Name="PlayerAudioTrackButton" Width="160" Classes="quiet" Margin="0,0,8,8">
+              <Button.Flyout>
+                <Flyout Placement="Top">
+                  <Border Classes="popupSurface" Padding="12" MinWidth="260" MaxHeight="320">
+                    <ScrollViewer><ItemsControl ItemsSource="{Binding PlayerAudioTracks}"><ItemsControl.ItemTemplate><DataTemplate><CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Checked="PlayerAudioTrack_OnChanged" Unchecked="PlayerAudioTrack_OnChanged" Margin="2,5" /></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
+                  </Border>
+                </Flyout>
+              </Button.Flyout>
+              音轨
+              </Button>
+              <Button Classes="quiet" Margin="0,0,8,8" Click="PlayerSubtitle_OnClick">字幕</Button>
+              <StackPanel x:Name="PlayerLutToolsPanel" Orientation="Horizontal" IsVisible="False">
+                <ComboBox x:Name="PlayerLutPicker" Width="180" Margin="0,0,8,8" ItemsSource="{Binding AvailableLuts}" SelectionChanged="PlayerLutPicker_OnSelectionChanged" PlaceholderText="选择 LUT" />
+                <Button Classes="quiet" Margin="0,0,8,8" Click="ClearPlayerLut_OnClick">清除 LUT</Button>
+                <Button Classes="quiet" Margin="0,0,8,8" Click="ManageLuts_OnClick">LUT 库</Button>
+              </StackPanel>
+            </WrapPanel>
+            <WrapPanel x:Name="PlayerTrimToolsPanel" IsVisible="False">
+              <TextBlock Text="裁剪" Margin="0,0,8,8" VerticalAlignment="Center" Classes="muted" />
+              <Button Classes="quiet" Margin="0,0,8,8" Click="PlayerSetInPoint_OnClick">设为入点</Button>
+              <Button Classes="quiet" Margin="0,0,8,8" Click="PlayerSetOutPoint_OnClick">设为出点</Button>
+              <Button Classes="quiet" Margin="0,0,8,8" Click="PlayerClearRange_OnClick">清除范围</Button>
+              <TextBlock x:Name="PlayerRangeText" Text="入点 --:-- · 出点 --:--" MinWidth="210" Margin="0,0,12,8" VerticalAlignment="Center" Classes="muted" />
+              <CheckBox x:Name="PlayerExportWithLutToggle" Content="导出时套用 LUT" Margin="0,0,12,8" VerticalAlignment="Center" IsVisible="False" />
+              <Button x:Name="PlayerExportButton" Classes="accent" Margin="0,0,8,8" Click="ExportPlayerMedia_OnClick">导出</Button>
+            </WrapPanel>
+            <TextBlock x:Name="PlayerToolStatusText" Text="" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <Grid x:Name="EditorPage" IsVisible="False">
+        <controls:EditorWorkspaceView x:Name="EditorWorkspace" />
+      </Grid>
+
+      <Grid x:Name="TransfersPage" IsVisible="False" RowDefinitions="Auto,*">
+        <StackPanel>
+          <TextBlock Text="传输任务" Classes="pageTitle" />
+          <TextBlock Text="上传与持久下载" Classes="muted" Margin="0,4,0,0" />
+        </StackPanel>
+        <Grid Grid.Row="1" Margin="0,20,0,0">
+          <TabControl>
+            <TabItem Header="上传">
+              <Grid RowDefinitions="Auto,*">
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10">
+                  <Button Tag="upload:pause" Click="TransferBatch_OnClick">全部暂停</Button>
+                  <Button Tag="upload:resume" Click="TransferBatch_OnClick">全部继续</Button>
+                  <Button Tag="upload:cancel" Click="TransferBatch_OnClick">全部取消</Button>
+                </StackPanel>
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                  <ItemsControl ItemsSource="{Binding UploadTransferItems}" ItemTemplate="{StaticResource TransferTaskTemplate}" />
+                </ScrollViewer>
+              </Grid>
+            </TabItem>
+            <TabItem Header="下载">
+              <Grid RowDefinitions="Auto,*">
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10">
+                  <Button Tag="download:pause" Click="TransferBatch_OnClick">全部暂停</Button>
+                  <Button Tag="download:resume" Click="TransferBatch_OnClick">全部继续</Button>
+                  <Button Tag="download:cancel" Click="TransferBatch_OnClick">全部取消</Button>
+                </StackPanel>
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                  <ItemsControl ItemsSource="{Binding DownloadTransferItems}" ItemTemplate="{StaticResource TransferTaskTemplate}" />
+                </ScrollViewer>
+              </Grid>
+            </TabItem>
+          </TabControl>
+          <TextBlock x:Name="EmptyTransfersText" Text="暂无传输任务" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="muted" />
+        </Grid>
+      </Grid>
+
+      <Grid x:Name="UsersPage" IsVisible="False" RowDefinitions="Auto,Auto,*">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel>
+            <TextBlock Text="用户列表" Classes="pageTitle" />
+            <TextBlock x:Name="UsersSummaryText" Text="团队成员" Classes="muted" Margin="0,4,0,0" />
+          </StackPanel>
+          <Button Grid.Column="1" Classes="quiet" Click="RefreshUsers_OnClick">刷新</Button>
+        </Grid>
+        <TextBox x:Name="UserSearchBox" Grid.Row="1" Watermark="搜索用户名或显示名称" Margin="0,20,0,16" TextChanged="UserSearch_OnTextChanged" />
+        <Grid Grid.Row="2">
+          <Border x:Name="UsersLoginState"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="1">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+              <TextBlock Text="连接服务器后显示团队成员"
+                         HorizontalAlignment="Center"
+                         TextAlignment="Center"
+                         FontWeight="SemiBold" />
+              <Button Classes="accent"
+                      HorizontalAlignment="Center"
+                      Click="ConnectServer_OnClick">登录</Button>
+            </StackPanel>
+          </Border>
+          <ScrollViewer x:Name="UsersScroll"
+                        IsVisible="False"
+                        HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding VisibleUsers}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:UserCardViewModel}">
+                  <Button Width="260"
+                          Height="92"
+                          Margin="0,0,12,12"
+                          Padding="14"
+                          HorizontalContentAlignment="Stretch"
+                          Classes="quiet"
+                          Click="UserCard_OnClick">
+                    <Grid ColumnDefinitions="50,*">
+                      <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource AccentSoftBrush}" VerticalAlignment="Center" ClipToBounds="True">
+                        <Grid>
+                          <TextBlock Text="{Binding Initial}"
+                                     IsVisible="{Binding ShowPlaceholder}"
+                                     Foreground="{DynamicResource AccentBrush}"
+                                     FontWeight="Bold"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center" />
+                          <Image Source="{Binding Avatar}"
+                                 IsVisible="{Binding HasAvatar}"
+                                 Stretch="UniformToFill" />
+                        </Grid>
+                      </Border>
+                      <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" Spacing="3">
+                        <TextBlock Text="{Binding DisplayLabel}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" />
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Text="{Binding AssetCountLabel}" Classes="muted" FontSize="11" />
+                          <TextBlock Grid.Column="1" Text="{Binding StatusLabel}" Classes="muted" FontSize="11" />
+                        </Grid>
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <TextBlock x:Name="UsersEmptyState"
+                     Text="没有符合条件的用户"
+                     IsVisible="False"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     TextAlignment="Center"
+                     Classes="muted" />
+        </Grid>
+      </Grid>
+
+      <ScrollViewer x:Name="ProfilePage" IsVisible="False">
+        <StackPanel MaxWidth="900" HorizontalAlignment="Stretch" Margin="0,0,16,0">
+          <Button x:Name="ProfileBackToUsersButton"
+                  IsVisible="False"
+                  HorizontalAlignment="Left"
+                  Margin="0,0,0,12"
+                  Classes="quiet"
+                  Click="BackToUsers_OnClick">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <TextBlock Text="‹" FontSize="18" />
+              <TextBlock Text="返回用户列表" />
+            </StackPanel>
+          </Button>
+          <Border Classes="glass" ClipToBounds="True">
+            <Grid RowDefinitions="84,Auto">
+              <Border Height="84" VerticalAlignment="Top" Background="{DynamicResource AccentSoftBrush}" />
+              <Grid Grid.Row="1" ColumnDefinitions="112,*,Auto" Margin="24,-38,24,22">
+                <Border Width="96"
+                        Height="96"
+                        CornerRadius="48"
+                        Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="3"
+                        VerticalAlignment="Top">
+                  <Grid ClipToBounds="True">
+                    <TextBlock x:Name="ProfileAvatarInitial" Text="-" FontSize="30" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Image x:Name="ProfileAvatarImage" IsVisible="False" Stretch="UniformToFill" />
+                  </Grid>
+                </Border>
+                <StackPanel Grid.Column="1" Margin="16,46,20,0" Spacing="5">
+                  <TextBlock x:Name="ProfileTitleText" Text="个人资料" Classes="pageTitle" TextWrapping="Wrap" />
+                  <TextBlock x:Name="ProfileSubtitleText" Text="登录后查看个人主页" Classes="muted" />
+                  <TextBlock x:Name="ProfileHeaderBioText" Text="尚未登录" Margin="0,8,0,2" TextWrapping="Wrap" MaxWidth="560" />
+                  <Border HorizontalAlignment="Left" Padding="9,4" CornerRadius="8" Background="{DynamicResource SurfaceRaisedBrush}">
+                    <TextBlock x:Name="ProfileHeaderRoleText" Text="本地模式" Classes="muted" FontSize="11" />
+                  </Border>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Margin="0,46,0,0" Orientation="Vertical" HorizontalAlignment="Right" VerticalAlignment="Top" Spacing="6">
+                  <Button x:Name="ProfileEditButton" Classes="accent" IsVisible="False" Click="EditProfile_OnClick">编辑资料</Button>
+                  <Button x:Name="ProfileLoginButton" Classes="accent" IsVisible="False" Click="ConnectServer_OnClick">登录</Button>
+                  <Button x:Name="SwitchAccountButton" Classes="quiet" IsVisible="False" Click="SwitchAccount_OnClick">切换账号</Button>
+                  <Button x:Name="LogoutButton" Classes="quiet" IsVisible="False" Click="Logout_OnClick">退出登录</Button>
+                </StackPanel>
+              </Grid>
+            </Grid>
+          </Border>
+
+          <TextBlock x:Name="ProfileStatusText" Margin="4,10,4,0" Classes="muted" TextWrapping="Wrap" />
+
+          <Border x:Name="ProfileOverviewPanel" Classes="glass" Margin="0,18,0,0" Padding="20">
+            <StackPanel Spacing="14">
+              <TextBlock Text="资料概览" Classes="sectionTitle" />
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                <StackPanel Spacing="5"><TextBlock Text="生日" Classes="muted" FontSize="11" /><TextBlock x:Name="ProfileBirthdayDisplayText" Text="未填写" TextWrapping="Wrap" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="5"><TextBlock Text="性别" Classes="muted" FontSize="11" /><TextBlock x:Name="ProfileGenderDisplayText" Text="未填写" TextWrapping="Wrap" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="5"><TextBlock Text="联系方式" Classes="muted" FontSize="11" /><TextBlock x:Name="ProfileContactDisplayText" Text="未填写" TextWrapping="Wrap" /></StackPanel>
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border x:Name="ProfileEditPanel" IsVisible="False" Classes="glass" Margin="0,18,0,0" Padding="20">
+            <StackPanel Spacing="14">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="编辑个人资料" Classes="sectionTitle" VerticalAlignment="Center" />
+                <StackPanel x:Name="ProfileAvatarActions" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                  <Button Classes="quiet" Click="UploadAvatar_OnClick">更换头像</Button>
+                  <Button Classes="quiet" Click="DeleteAvatar_OnClick">移除头像</Button>
+                </StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <StackPanel><TextBlock Text="显示名称" Classes="muted" Margin="0,0,0,5" /><TextBox x:Name="ProfileDisplayNameBox" MaxLength="40" /></StackPanel>
+                <StackPanel Grid.Column="1"><TextBlock Text="用户名" Classes="muted" Margin="0,0,0,5" /><TextBox x:Name="ProfileUsernameBox" IsReadOnly="True" /></StackPanel>
+              </Grid>
+              <StackPanel><TextBlock Text="个人简介" Classes="muted" Margin="0,0,0,5" /><TextBox x:Name="ProfileBioBox" AcceptsReturn="True" MinHeight="88" TextWrapping="Wrap" MaxLength="500" /></StackPanel>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <StackPanel><TextBlock Text="生日" Classes="muted" Margin="0,0,0,5" /><CalendarDatePicker x:Name="ProfileBirthdayPicker" Watermark="选择日期" /></StackPanel>
+                <StackPanel Grid.Column="1"><TextBlock Text="性别" Classes="muted" Margin="0,0,0,5" /><ComboBox x:Name="ProfileGenderPicker" SelectedIndex="0"><ComboBoxItem Content="未设置" /><ComboBoxItem Content="男" /><ComboBoxItem Content="女" /><ComboBoxItem Content="自定义" /></ComboBox></StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <StackPanel><TextBlock Text="自定义性别" Classes="muted" Margin="0,0,0,5" /><TextBox x:Name="ProfileCustomGenderBox" MaxLength="40" /></StackPanel>
+                <StackPanel Grid.Column="1"><TextBlock Text="联系方式" Classes="muted" Margin="0,0,0,5" /><TextBox x:Name="ProfileContactBox" MaxLength="200" /></StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                <StackPanel><TextBlock Text="生日可见性" Classes="muted" Margin="0,0,0,5" /><ComboBox x:Name="BirthdayVisibilityPicker" SelectedIndex="0"><ComboBoxItem Content="仅自己" /><ComboBoxItem Content="团队可见" /></ComboBox></StackPanel>
+                <StackPanel Grid.Column="1"><TextBlock Text="性别可见性" Classes="muted" Margin="0,0,0,5" /><ComboBox x:Name="GenderVisibilityPicker" SelectedIndex="0"><ComboBoxItem Content="仅自己" /><ComboBoxItem Content="团队可见" /></ComboBox></StackPanel>
+                <StackPanel Grid.Column="2"><TextBlock Text="联系方式可见性" Classes="muted" Margin="0,0,0,5" /><ComboBox x:Name="ContactVisibilityPicker" SelectedIndex="0"><ComboBoxItem Content="仅自己" /><ComboBoxItem Content="团队可见" /></ComboBox></StackPanel>
+              </Grid>
+              <Grid x:Name="ProfileEmailSection" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                <StackPanel><TextBlock Text="绑定邮箱（仅用于附属登录，不公开）" Classes="muted" Margin="0,0,0,5" /><TextBox x:Name="ProfileEmailBox" Watermark="name@example.com" MaxLength="254" /></StackPanel>
+                <Button Grid.Column="1" Classes="quiet" VerticalAlignment="Bottom" Click="BindEmail_OnClick">绑定 / 换绑</Button>
+                <Button Grid.Column="2" Classes="quiet" VerticalAlignment="Bottom" Click="UnbindEmail_OnClick">解绑</Button>
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <StackPanel VerticalAlignment="Center" Spacing="3">
+                  <TextBlock Text="账户安全" FontWeight="SemiBold" />
+                  <TextBlock Text="修改密码需要验证当前密码" Classes="muted" FontSize="11" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="quiet" VerticalAlignment="Center" Click="ChangePassword_OnClick">修改密码</Button>
+              </Grid>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button x:Name="ProfileCancelButton" Classes="quiet" Click="CancelProfileEdit_OnClick">取消</Button>
+                <Button x:Name="ProfileSaveButton" Classes="accent" Click="SaveProfile_OnClick">保存资料</Button>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <TextBlock Text="上传的素材" Classes="sectionTitle" Margin="0,24,0,10" />
+          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="ProfileAllCount" Tag="all" Classes="filterChip selected" Click="ProfileAssetCategory_OnClick">全部  0</Button>
+              <Button x:Name="ProfileBgmCount" Tag="bgm" Classes="filterChip" Click="ProfileAssetCategory_OnClick">BGM  0</Button>
+              <Button x:Name="ProfileSoundCount" Tag="sound" Classes="filterChip" Click="ProfileAssetCategory_OnClick">音效  0</Button>
+              <Button x:Name="ProfileVideoCount" Tag="video" Classes="filterChip" Click="ProfileAssetCategory_OnClick">视频  0</Button>
+              <Button x:Name="ProfileImageCount" Tag="image" Classes="filterChip" Click="ProfileAssetCategory_OnClick">图片  0</Button>
+              <Button x:Name="ProfileLutCount" Tag="lut" Classes="filterChip" Click="ProfileAssetCategory_OnClick">LUT  0</Button>
+            </StackPanel>
+          </ScrollViewer>
+          <ItemsControl x:Name="ProfileAssetItems" ItemsSource="{Binding ProfileAssets}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type vm:CloudAssetCardViewModel}">
+                <Button Width="190" Height="70" Margin="0,0,10,10" Padding="12" Classes="quiet" HorizontalContentAlignment="Stretch" Click="ProfileAsset_OnClick">
+                  <Grid ColumnDefinitions="38,*">
+                    <Border Width="34" Height="34" CornerRadius="6" Background="{DynamicResource AccentSoftBrush}" VerticalAlignment="Center" ClipToBounds="True">
+                      <Grid>
+                        <Image Source="{Binding Thumbnail}" IsVisible="{Binding HasThumbnail}" Stretch="UniformToFill" />
+                        <TextBlock Text="{Binding Initial}" IsVisible="{Binding ShowPlaceholder}" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Grid>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding CategoryLabel}" Classes="muted" FontSize="10" />
+                    </StackPanel>
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <ItemsControl x:Name="ProfileLutItems"
+                        ItemsSource="{Binding ProfileLuts}"
+                        IsVisible="False">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type vm:ProfileLutCardViewModel}">
+                <Button Width="310"
+                        Height="104"
+                        Margin="0,0,10,10"
+                        Padding="14"
+                        Classes="quiet"
+                        HorizontalContentAlignment="Stretch"
+                        ToolTip.Tip="打开 LUT 库"
+                        Click="ProfileLut_OnClick">
+                  <Grid ColumnDefinitions="52,*" ColumnSpacing="12">
+                    <Border Width="48"
+                            Height="48"
+                            CornerRadius="8"
+                            Background="{DynamicResource AccentSoftBrush}"
+                            VerticalAlignment="Top">
+                      <TextBlock Text="LUT"
+                                 Foreground="{DynamicResource AccentBrush}"
+                                 FontSize="12"
+                                 FontWeight="Bold"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="3">
+                      <TextBlock Text="{Binding Name}"
+                                 FontWeight="SemiBold"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding FileLabel}"
+                                 Classes="muted"
+                                 FontSize="11"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding NoteLabel}"
+                                 Classes="muted"
+                                 FontSize="11"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding UpdatedLabel}"
+                                 Classes="muted"
+                                 FontSize="10" />
+                    </StackPanel>
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock x:Name="ProfileAssetsEmptyText"
+                     Text="该分类下暂无素材"
+                     IsVisible="False"
+                     HorizontalAlignment="Center"
+                     TextAlignment="Center"
+                     Classes="muted"
+                     Margin="0,8,0,0" />
+          <TextBlock x:Name="ProfileLutsEmptyText"
+                     Text="该用户尚未上传团队 LUT"
+                     IsVisible="False"
+                     HorizontalAlignment="Center"
+                     TextAlignment="Center"
+                     Classes="muted"
+                     Margin="0,8,0,0" />
+        </StackPanel>
+      </ScrollViewer>
+
+      <Grid x:Name="RecycleBinPage" IsVisible="False" RowDefinitions="Auto,*">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel>
+            <TextBlock Text="我的回收站（云端删除文件）" Classes="pageTitle" />
+            <TextBlock x:Name="MyRecycleBinSummaryText"
+                       Text="仅显示当前账号删除的云端素材"
+                       Classes="muted"
+                       Margin="0,4,0,0" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Button x:Name="ClearMyRecycleBinButton"
+                    Classes="quiet"
+                    IsEnabled="False"
+                    Foreground="{DynamicResource ErrorBrush}"
+                    Click="ClearMyRecycleBin_OnClick">一键永久删除</Button>
+            <Button Classes="quiet" Click="RefreshMyRecycleBin_OnClick">刷新</Button>
+          </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="0,20,0,0">
+          <ScrollViewer VerticalScrollBarVisibility="Auto"
+                        HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding MyRecycleBinAssets}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:RecycleBinAssetViewModel}">
+                  <Border MinHeight="86"
+                          Margin="0,0,0,9"
+                          Padding="12"
+                          CornerRadius="8"
+                          Background="{DynamicResource SurfaceBrush}"
+                          BorderBrush="{DynamicResource BorderBrush}"
+                          BorderThickness="1">
+                    <Grid ColumnDefinitions="52,*,190,Auto" ColumnSpacing="12">
+                      <Border Width="48"
+                              Height="48"
+                              CornerRadius="7"
+                              Background="{DynamicResource AccentSoftBrush}"
+                              VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Extension}"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   FontWeight="Bold"
+                                   FontSize="10"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                      </Border>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding FileLabel}" Classes="muted" FontSize="10" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding TagsLabel}" Classes="muted" FontSize="10" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
+                        <TextBlock Text="{Binding CategoryLabel}" FontWeight="SemiBold" FontSize="11" />
+                        <TextBlock Text="{Binding RecycledLabel}" Classes="muted" FontSize="10" />
+                        <TextBlock Text="{Binding PurgeLabel}" Classes="muted" FontSize="10" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                        <Button Classes="quiet" Click="RestoreMyRecycleBinAsset_OnClick">恢复</Button>
+                        <Button Classes="quiet"
+                                Foreground="{DynamicResource ErrorBrush}"
+                                Click="PermanentlyDeleteMyRecycleBinAsset_OnClick">永久删除</Button>
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <TextBlock x:Name="MyRecycleBinEmptyText"
+                     Text="回收站为空"
+                     IsVisible="True"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     Classes="muted" />
+        </Grid>
+      </Grid>
+
+      <controls:AdminWorkspaceView x:Name="AdminWorkspace" IsVisible="False" />
+
+      <ScrollViewer x:Name="SettingsPage" IsVisible="False">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch" Margin="0,0,16,0">
+          <TextBlock Text="设置" Classes="pageTitle" />
+          <TextBlock Text="客户端偏好" Classes="muted" Margin="0,4,0,22" />
+
+          <Border Margin="0,0,0,24"
+                  Padding="18"
+                  CornerRadius="12"
+                  Background="{DynamicResource AccentSoftBrush}"
+                  BorderBrush="{DynamicResource SelectionBorderBrush}"
+                  BorderThickness="1">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+              <Border Width="58"
+                      Height="58"
+                      CornerRadius="29"
+                      ClipToBounds="True"
+                      VerticalAlignment="Center">
+                <Image Source="avares://InternalAssetLibrary.Client/Assets/author-fengchen.png"
+                       Stretch="UniformToFill" />
+              </Border>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                <TextBlock x:Name="AuthorNameText" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="云汀素材管理工具开发者" Classes="muted" />
+              </StackPanel>
+              <StackPanel Grid.Column="2"
+                          Orientation="Horizontal"
+                          VerticalAlignment="Center"
+                          Spacing="8">
+                <Button Classes="quiet" Click="OpenBilibiliProfile_OnClick">Bilibili 主页 ↗</Button>
+                <Button Classes="quiet" Click="OpenGitHubProfile_OnClick">GitHub ↗</Button>
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <TextBlock Text="外观" Classes="sectionTitle" Margin="0,0,0,10" />
+          <Grid ColumnDefinitions="*,260" RowDefinitions="48,48,48,48,48" Margin="0,0,0,24">
+            <StackPanel VerticalAlignment="Center"><TextBlock Text="主题" /><TextBlock Text="深色、浅色或跟随系统" Classes="muted" FontSize="11" /></StackPanel>
+            <ComboBox x:Name="ThemePicker" Grid.Column="1" SelectedIndex="2" SelectionChanged="ThemePicker_OnSelectionChanged"><ComboBoxItem Content="深色" /><ComboBoxItem Content="浅色" /><ComboBoxItem Content="跟随系统" /></ComboBox>
+            <StackPanel Grid.Row="1" VerticalAlignment="Center"><TextBlock Text="强调色来源" /><TextBlock Text="默认跟随系统个性化颜色，也可使用自定义配色" Classes="muted" FontSize="11" /></StackPanel>
+            <ComboBox x:Name="AccentSourcePicker" Grid.Row="1" Grid.Column="1" SelectedIndex="0" SelectionChanged="AccentSourcePicker_OnSelectionChanged"><ComboBoxItem Content="跟随系统" /><ComboBoxItem Content="自定义颜色" /></ComboBox>
+            <StackPanel Grid.Row="2" VerticalAlignment="Center"><TextBlock Text="界面语言" /><TextBlock Text="切换后立即生效" Classes="muted" FontSize="11" /></StackPanel>
+            <ComboBox x:Name="LanguagePicker" Grid.Row="2" Grid.Column="1" SelectedIndex="0" SelectionChanged="LanguagePicker_OnSelectionChanged"><ComboBoxItem Content="简体中文" /><ComboBoxItem Content="English" /></ComboBox>
+            <StackPanel Grid.Row="3" VerticalAlignment="Center"><TextBlock Text="自定义颜色" /><TextBlock x:Name="ThemeColorStatusText" Text="深色与浅色主题分别保存" Classes="muted" FontSize="11" /></StackPanel>
+            <Button Grid.Row="3" Grid.Column="1" Classes="quiet" HorizontalAlignment="Stretch" Click="EditThemeColors_OnClick">编辑语义颜色</Button>
+            <StackPanel Grid.Row="4" VerticalAlignment="Center"><TextBlock Text="减少动态效果" /><TextBlock Text="关闭面板和主题过渡动画，保留拖拽与播放反馈" Classes="muted" FontSize="11" /></StackPanel>
+            <ToggleSwitch x:Name="ReduceMotionToggle" Grid.Row="4" Grid.Column="1" IsChecked="False" IsCheckedChanged="ReduceMotionToggle_OnChanged" />
+          </Grid>
+
+          <TextBlock Text="预览" Classes="sectionTitle" Margin="0,0,0,10" />
+          <Grid ColumnDefinitions="*,Auto" RowDefinitions="44,44,44,44" Margin="0,0,0,24">
+            <TextBlock Text="本地素材悬停预览" VerticalAlignment="Center" /><ToggleSwitch x:Name="LocalHoverToggle" Grid.Column="1" IsChecked="False" IsCheckedChanged="LocalHoverToggle_OnChanged" />
+            <TextBlock Grid.Row="1" Text="云端素材悬停预览" VerticalAlignment="Center" /><ToggleSwitch x:Name="CloudHoverToggle" Grid.Row="1" Grid.Column="1" IsChecked="False" IsCheckedChanged="CloudHoverToggle_OnChanged" />
+            <StackPanel Grid.Row="2" VerticalAlignment="Center"><TextBlock Text="单击素材开始侧边预览" /><TextBlock Text="开启后单击本地或云端素材即可在右侧预览并播放" Classes="muted" FontSize="11" /></StackPanel>
+            <ToggleSwitch x:Name="SingleClickPreviewToggle" Grid.Row="2" Grid.Column="1" IsChecked="False" IsCheckedChanged="SingleClickPreviewToggle_OnChanged" />
+            <TextBlock Grid.Row="3" Text="视频预览默认静音" VerticalAlignment="Center" /><ToggleSwitch x:Name="VideoMutedToggle" Grid.Row="3" Grid.Column="1" IsCheckedChanged="VideoMutedToggle_OnChanged" />
+          </Grid>
+
+          <TextBlock Text="播放与文件关联" Classes="sectionTitle" Margin="0,0,0,10" />
+          <Grid ColumnDefinitions="*,260" RowDefinitions="48,48,48,56" Margin="0,0,0,24">
+            <StackPanel VerticalAlignment="Center"><TextBlock Text="媒体运行库" /><TextBlock x:Name="MediaRuntimeStatusText" Text="正在检查 libmpv 与 FFmpeg" Classes="muted" FontSize="11" /></StackPanel>
+            <Button Grid.Column="1" Classes="quiet" Click="RecheckMediaRuntime_OnClick">重新检查</Button>
+            <StackPanel Grid.Row="1" VerticalAlignment="Center"><TextBlock Text="默认播放器" /><TextBlock Text="注册支持的媒体格式后，由 Windows 完成最终选择" Classes="muted" FontSize="11" /></StackPanel>
+            <Button Grid.Row="1" Grid.Column="1" Classes="quiet" Click="ConfigureDefaultPlayer_OnClick">配置默认播放器</Button>
+            <StackPanel Grid.Row="2" VerticalAlignment="Center"><TextBlock Text="LUT 库" /><TextBlock Text="连接本地 .cube 文件并访问团队共享 LUT" Classes="muted" FontSize="11" /></StackPanel>
+            <Button Grid.Row="2" Grid.Column="1" Classes="quiet" Click="ManageLuts_OnClick">管理 LUT</Button>
+            <StackPanel Grid.Row="3" VerticalAlignment="Center"><TextBlock Text="总音量" /><TextBlock Text="播放器和素材预览共用此音量" Classes="muted" FontSize="11" /></StackPanel>
+            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="10" VerticalAlignment="Center">
+              <Slider x:Name="SettingsVolumeSlider"
+                      Minimum="0"
+                      Maximum="100"
+                      Value="40"
+                      ValueChanged="SettingsVolumeSlider_OnValueChanged" />
+              <TextBlock x:Name="SettingsVolumeText"
+                         Grid.Column="1"
+                         Text="40%"
+                         MinWidth="42"
+                         TextAlignment="Right"
+                         VerticalAlignment="Center"
+                         Classes="muted" />
+            </Grid>
+          </Grid>
+
+          <TextBlock Text="文件" Classes="sectionTitle" Margin="0,0,0,10" />
+          <Grid ColumnDefinitions="*,Auto" RowDefinitions="44,44" Margin="0,0,0,24">
+            <StackPanel VerticalAlignment="Center"><TextBlock Text="素材默认保存目录" /><TextBlock x:Name="DownloadDirectoryText" Text="尚未设置" Classes="muted" FontSize="11" /></StackPanel>
+            <Button Grid.Column="1" Classes="quiet" VerticalAlignment="Center" Click="ChooseDownloadDirectory_OnClick">更改目录</Button>
+            <StackPanel Grid.Row="1" VerticalAlignment="Center"><TextBlock Text="默认下载素材至默认目录" /><TextBlock Text="关闭后每次下载操作选择一次保存位置" Classes="muted" FontSize="11" /></StackPanel>
+            <ToggleSwitch x:Name="DownloadToDefaultDirectoryToggle"
+                          Grid.Row="1"
+                          Grid.Column="1"
+                          IsChecked="True"
+                          IsCheckedChanged="DownloadToDefaultDirectoryToggle_OnChanged" />
+          </Grid>
+
+          <TextBlock Text="关闭与系统托盘" Classes="sectionTitle" Margin="0,0,0,10" />
+          <Grid ColumnDefinitions="*,260" RowDefinitions="48,48,Auto" Margin="0,0,0,24">
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="点击关闭按钮时" />
+              <TextBlock Text="选择默认执行的关闭动作" Classes="muted" FontSize="11" />
+            </StackPanel>
+            <ComboBox x:Name="CloseActionPicker"
+                      Grid.Column="1"
+                      SelectedIndex="0"
+                      SelectionChanged="CloseBehaviorSettings_OnChanged">
+              <ComboBoxItem Content="最小化到系统托盘" />
+              <ComboBoxItem Content="关闭软件" />
+            </ComboBox>
+            <StackPanel Grid.Row="1" VerticalAlignment="Center">
+              <TextBlock Text="每次关闭时询问" />
+              <TextBlock Text="关闭后可从系统托盘恢复主窗口" Classes="muted" FontSize="11" />
+            </StackPanel>
+            <ToggleSwitch x:Name="AskOnCloseToggle"
+                          Grid.Row="1"
+                          Grid.Column="1"
+                          IsChecked="True"
+                          IsCheckedChanged="CloseBehaviorSettings_OnChanged" />
+            <TextBlock x:Name="CloseBehaviorStatusText"
+                       Grid.Row="2"
+                       Grid.ColumnSpan="2"
+                       Classes="muted"
+                       FontSize="11"
+                       TextWrapping="Wrap" />
+          </Grid>
+
+          <TextBlock Text="服务器" Classes="sectionTitle" Margin="0,0,0,10" />
+          <StackPanel Spacing="8" Margin="0,0,0,24">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+              <TextBox x:Name="ServerAddressBox"
+                       Watermark="https://assets.example.com/"
+                       PasswordChar="*" />
+              <Button x:Name="ServerAddressVisibilityButton"
+                      Grid.Column="1"
+                      Classes="quiet"
+                      Click="ServerAddressVisibility_OnClick">显示地址</Button>
+              <Button Grid.Column="2" Classes="quiet" Click="SaveServerAddress_OnClick">应用地址</Button>
+              <Button x:Name="ServerLoginButton" Grid.Column="3" Classes="accent" Click="ConnectServer_OnClick">登录</Button>
+            </Grid>
+            <TextBlock x:Name="ServerAddressStatusText"
+                       Text="公网或内网穿透地址必须使用 HTTPS；本机回环和 WireGuard 私网 IP 可使用 HTTP"
+                       Classes="muted"
+                       FontSize="11"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+
+          <TextBlock Text="恢复设置" Classes="sectionTitle" Margin="0,0,0,10" />
+          <Grid ColumnDefinitions="*,260" Margin="0,0,0,24">
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="恢复为默认设置" />
+              <TextBlock Text="重置界面、预览和播放偏好，保留服务器地址、素材默认保存目录和已保存账号" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+              <TextBlock x:Name="RestoreDefaultSettingsStatusText" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="quiet" HorizontalAlignment="Stretch" VerticalAlignment="Center" Click="RestoreDefaultSettings_OnClick">恢复为默认设置</Button>
+          </Grid>
+
+          <TextBlock Text="更新" Classes="sectionTitle" Margin="0,0,0,10" />
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="4">
+              <TextBlock Text="客户端版本" />
+              <TextBlock x:Name="ClientVersionText" Text="正在读取版本" Classes="muted" FontSize="11" />
+              <TextBlock x:Name="ClientUpdateStatusText" Text="启动后自动检查更新" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+              <Grid x:Name="ClientUpdateProgressPanel"
+                    IsVisible="False"
+                    ColumnDefinitions="*,Auto"
+                    ColumnSpacing="10"
+                    Margin="0,4,0,0">
+                <ProgressBar x:Name="ClientUpdateProgressBar"
+                             Height="8"
+                             Minimum="0"
+                             Maximum="100"
+                             Value="0"
+                             VerticalAlignment="Center" />
+                <TextBlock x:Name="ClientUpdateProgressText"
+                           Grid.Column="1"
+                           MinWidth="118"
+                           TextAlignment="Right"
+                           Classes="muted"
+                           FontSize="10" />
+              </Grid>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+              <Button Classes="quiet" Click="ViewReleaseNotes_OnClick">查看更新日志</Button>
+              <Button x:Name="CheckUpdatesButton"
+                      Classes="quiet"
+                      Click="CheckUpdates_OnClick">检查更新</Button>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+
+    <Button x:Name="DetailExpandButton"
+            Grid.Column="3"
+            Width="112"
+            Height="50"
+            MinHeight="50"
+            Padding="14,0"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Margin="0,0,18,18"
+            Classes="detailExpand detailExpandFloating"
+            IsVisible="False"
+            ZIndex="200"
+            Click="DetailSidebarToggle_OnClick"
+            ToolTip.Tip="展开素材详情">
+      <StackPanel Orientation="Horizontal" Spacing="5">
+        <TextBlock Text="‹" FontSize="18" />
+        <TextBlock Text="详情" />
+      </StackPanel>
+    </Button>
+
+    <GridSplitter x:Name="DetailSplitter"
+                  Grid.Column="4"
+                  Margin="1,12"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  ResizeDirection="Columns"
+                  ResizeBehavior="PreviousAndNext"
+                  CornerRadius="3"
+                  ToolTip.Tip="拖动调整素材详情宽度" />
+
+    <Border x:Name="DetailSidebar"
+            Grid.Column="5"
+            Opacity="1"
+            ClipToBounds="True"
+            Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1,0,0,0">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Width" Duration="0:0:0.18" />
+          <DoubleTransition Property="Opacity" Duration="0:0:0.16" />
+        </Transitions>
+      </Border.Transitions>
+      <Grid>
+        <Grid x:Name="DetailExpandedContent" Margin="20" RowDefinitions="Auto,220,Auto,Auto,*,Auto">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+          <TextBlock Text="素材详情" Classes="sectionTitle" />
+          <Button Grid.Column="1"
+                  MinWidth="72"
+                  Height="30"
+                  MinHeight="30"
+                  Padding="10,0"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  Classes="detailExpand"
+                  ToolTip.Tip="收起素材详情"
+                  Click="DetailSidebarToggle_OnClick">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+              <TextBlock Text="›" FontSize="17" />
+              <TextBlock Text="收起" />
+            </StackPanel>
+          </Button>
+          <Button Grid.Column="2"
+                  MinWidth="52"
+                  Height="30"
+                  MinHeight="30"
+                  Padding="10,0"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  Classes="quiet"
+                  ToolTip.Tip="清除当前选择"
+                  Click="CloseDetail_OnClick">关闭</Button>
+        </Grid>
+        <Border x:Name="DetailPreviewBorder"
+                Grid.Row="1"
+                Margin="0,16"
+                CornerRadius="8"
+                ClipToBounds="True"
+                Background="{DynamicResource SurfaceRaisedBrush}">
+          <Grid>
+            <controls:MpvVideoHost x:Name="DetailVideoHost" />
+            <Border x:Name="DetailEndedBackdrop"
+                    Background="#000000"
+                    IsVisible="False"
+                    IsHitTestVisible="False" />
+            <Image x:Name="DetailPreviewImage"
+                   IsVisible="False"
+                   Stretch="Uniform" />
+            <TextBlock x:Name="DetailInitial"
+                       Text="?"
+                       IsVisible="True"
+                       FontSize="56"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBrush}"
+                       Opacity="0.65"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+            <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" Padding="7,4" Classes="mediaBadge">
+              <TextBlock x:Name="DetailExtension" Text="FILE" Classes="mediaBadgeText" FontSize="10" FontWeight="Bold" />
+            </Border>
+          </Grid>
+        </Border>
+        <StackPanel Grid.Row="2" Spacing="5">
+          <TextBlock x:Name="DetailName" Text="未选择素材" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
+          <TextBlock x:Name="DetailMeta" Text="从素材列表中选择一项" Classes="muted" />
+        </StackPanel>
+        <Border x:Name="DetailPlaybackControls" Grid.Row="3" Margin="0,12,0,0" Padding="10" CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" IsVisible="False">
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+              <Button x:Name="DetailPlayPauseButton" Width="36" Height="32" MinHeight="32" Padding="0" Classes="accent" Click="DetailPlayPause_OnClick" ToolTip.Tip="播放或暂停">▶</Button>
+              <Slider x:Name="DetailPositionSlider" Grid.Column="1" Minimum="0" Maximum="1" ValueChanged="DetailPositionSlider_OnValueChanged" />
+              <TextBlock x:Name="DetailTimeText" Grid.Column="2" Text="00:00" MinWidth="44" VerticalAlignment="Center" TextAlignment="Right" Classes="muted" />
+              <Button Grid.Column="3" Height="32" MinHeight="32" Padding="10,0" Classes="quiet" Click="DetailAddMarker_OnClick" ToolTip.Tip="在当前时间标记">标记</Button>
+            </Grid>
+            <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <TextBlock Text="总音量" Classes="muted" VerticalAlignment="Center" FontSize="10" />
+              <Slider x:Name="DetailVolumeSlider" Grid.Column="1" Minimum="0" Maximum="100" Value="40" ValueChanged="DetailVolumeSlider_OnValueChanged" />
+            </Grid>
+            <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <Button x:Name="DetailAudioTrackButton" Height="30" MinHeight="30" Padding="10,0" Classes="quiet" ToolTip.Tip="选择一个或多个音轨">
+                <Button.Flyout><Flyout><Border Classes="popupSurface" Padding="12" MinWidth="250" MaxHeight="300"><ScrollViewer><ItemsControl ItemsSource="{Binding DetailAudioTracks}"><ItemsControl.ItemTemplate><DataTemplate><CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Checked="DetailAudioTrack_OnChanged" Unchecked="DetailAudioTrack_OnChanged" Margin="2,5" /></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer></Border></Flyout></Button.Flyout>
+                音轨
+              </Button>
+              <ComboBox x:Name="DetailLutPicker" Grid.Column="1" ItemsSource="{Binding AvailableLuts}" SelectionChanged="DetailLutPicker_OnSelectionChanged" PlaceholderText="预览 LUT" MinWidth="0" MinHeight="30" HorizontalAlignment="Stretch" />
+            </Grid>
+            <WrapPanel x:Name="DetailLutToolsPanel" Grid.Row="3" HorizontalAlignment="Right" IsVisible="False">
+              <Button MinHeight="30" Padding="10,0" Margin="0,0,8,0" Classes="quiet" Click="ClearDetailLut_OnClick" ToolTip.Tip="清除当前预览 LUT">清除 LUT</Button>
+              <Button x:Name="DetailExportLutButton" MinHeight="30" Padding="10,0" Classes="quiet" Click="ExportDetailWithLut_OnClick" ToolTip.Tip="将当前 LUT 套用到导出文件">套 LUT 导出</Button>
+            </WrapPanel>
+          </Grid>
+        </Border>
+        <ScrollViewer Grid.Row="4" Margin="0,16,0,0" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="90,*"><TextBlock Text="加入时间" Classes="muted" /><TextBlock x:Name="DetailAdded" Grid.Column="1" Text="-" /></Grid>
+            <Grid ColumnDefinitions="90,*,Auto">
+              <TextBlock Text="标签" Classes="muted" />
+              <TextBlock x:Name="DetailTags" Grid.Column="1" Text="-" TextWrapping="Wrap" />
+              <Button x:Name="EditTagsButton" Grid.Column="2" Classes="quiet" Padding="7,3" MinHeight="28" Click="EditLocalTags_OnClick">编辑</Button>
+            </Grid>
+            <Grid ColumnDefinitions="90,*"><TextBlock Text="状态" Classes="muted" /><TextBlock x:Name="DetailStatus" Grid.Column="1" Text="-" TextWrapping="Wrap" /></Grid>
+            <Grid ColumnDefinitions="90,*"><TextBlock Text="备注" Classes="muted" /><TextBlock x:Name="DetailNotes" Grid.Column="1" Text="-" TextWrapping="Wrap" /></Grid>
+            <StackPanel Margin="0,8,0,0">
+              <TextBlock Text="标记" Classes="sectionTitle" Margin="0,0,0,8" />
+              <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock x:Name="DetailMarkerSummary" Text="选择素材后查看" Classes="muted" VerticalAlignment="Center" TextWrapping="Wrap" />
+                  <Button x:Name="ManageMarkersButton" Grid.Column="1" Classes="quiet" Padding="8,4" MinHeight="30" Click="ManageLocalMarkers_OnClick">管理</Button>
+                </Grid>
+              </Border>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+        <WrapPanel Grid.Row="5" Margin="0,10,0,0">
+          <Button x:Name="OpenAssetLocationButton" Classes="quiet" Margin="0,0,8,8" Click="OpenSelectedLocalAsset_OnClick">打开位置</Button>
+          <Button x:Name="UploadLocalAssetButton" Classes="quiet" Margin="0,0,8,8" IsVisible="False" Click="UploadSelectedLocalAsset_OnClick">上传云端</Button>
+          <Button x:Name="EditCloudAssetButton" Classes="quiet" Margin="0,0,8,8" IsVisible="False" Click="EditSelectedCloudAsset_OnClick">名称/备注</Button>
+          <Button x:Name="ReplaceCloudAssetButton" Classes="quiet" Margin="0,0,8,8" IsVisible="False" Click="ReplaceSelectedCloudAsset_OnClick">换源</Button>
+          <Button x:Name="RecycleCloudAssetButton" Classes="quiet" Margin="0,0,8,8" IsVisible="False" Click="RecycleSelectedCloudAsset_OnClick">移至回收站</Button>
+          <Button x:Name="DownloadCloudAssetButton" Classes="quiet" Margin="0,0,8,8" IsVisible="False" Click="DownloadSelectedCloudAsset_OnClick">下载</Button>
+          <Button x:Name="DragAssetButton" Classes="accent"
+                  Margin="0,0,0,8"
+                  ToolTip.Tip="按住并拖到剪辑或音频编辑软件"
+                   Click="OpenEditor_OnClick"
+                   PointerPressed="SelectedAssetDrag_OnPointerPressed"
+                   PointerReleased="AssetCard_OnPointerReleased"
+                   PointerMoved="SelectedAssetDrag_OnPointerMoved">在编辑器中打开</Button>
+        </WrapPanel>
+        </Grid>
+      </Grid>
+    </Border>
+
+    <Popup x:Name="LocalImagePreviewPopup"
+           Placement="Pointer"
+           HorizontalOffset="18"
+           VerticalOffset="18"
+           IsLightDismissEnabled="False">
+      <Border Width="400"
+              Padding="8"
+              IsHitTestVisible="False"
+              Background="{DynamicResource SurfaceBrush}"
+              BorderBrush="{DynamicResource BorderBrush}"
+              BorderThickness="1"
+              CornerRadius="8">
+        <Grid RowDefinitions="280,Auto">
+          <Border Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="6" ClipToBounds="True">
+            <Image x:Name="LocalImagePreviewImage" Stretch="Uniform" />
+          </Border>
+          <TextBlock x:Name="LocalImagePreviewName"
+                     Grid.Row="1"
+                     Margin="4,8,4,2"
+                     FontWeight="SemiBold"
+                     TextTrimming="CharacterEllipsis" />
+        </Grid>
+      </Border>
+    </Popup>
+
+    <Border x:Name="LocalFolderRemoveConfirmationOverlay"
+            Grid.ColumnSpan="6"
+            IsVisible="False"
+            Background="#990B1117">
+      <Border Width="460"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              Padding="22"
+              Classes="popupSurface"
+              CornerRadius="8">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="44,*" ColumnSpacing="14">
+            <Border Width="40"
+                    Height="40"
+                    CornerRadius="8"
+                    Background="{DynamicResource AccentSoftBrush}">
+              <TextBlock Text="−"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         Foreground="{DynamicResource AccentBrush}"
+                         FontSize="22"
+                         FontWeight="Bold" />
+            </Border>
+            <StackPanel Grid.Column="1" Spacing="6">
+              <TextBlock Text="从目录移除？"
+                         Classes="sectionTitle"
+                         TextWrapping="Wrap" />
+              <TextBlock Text="只会从软件中移除该目录的索引和标签记录，不会删除磁盘上的文件夹或素材。"
+                         Classes="muted"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+
+          <Border Grid.Row="1"
+                  Margin="0,18,0,0"
+                  Padding="12,9"
+                  CornerRadius="8"
+                  Background="{DynamicResource SurfaceRaisedBrush}"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  BorderThickness="1">
+            <TextBlock x:Name="LocalFolderRemovePathText"
+                       Classes="muted"
+                       TextWrapping="Wrap" />
+          </Border>
+
+          <TextBlock x:Name="LocalFolderRemoveMessageText"
+                     Grid.Row="2"
+                     Margin="0,10,0,0"
+                     Classes="muted"
+                     TextWrapping="Wrap" />
+
+          <StackPanel Grid.Row="3"
+                      Margin="0,20,0,0"
+                      Orientation="Horizontal"
+                      HorizontalAlignment="Right"
+                      Spacing="8">
+            <Button x:Name="LocalFolderRemoveCancelButton"
+                    Classes="quiet"
+                    Click="CancelLocalFolderRemoval_OnClick">取消</Button>
+            <Button x:Name="LocalFolderRemoveConfirmButton"
+                    Classes="accent"
+                    Click="ConfirmLocalFolderRemoval_OnClick">从目录移除</Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Border>
+
+    <Border x:Name="TransientNotification"
+            Grid.ColumnSpan="6"
+            MinWidth="220"
+            MaxWidth="520"
+            Margin="18"
+            Padding="14,10"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            IsVisible="False"
+            IsHitTestVisible="False"
+            Opacity="0"
+            ZIndex="2000"
+            CornerRadius="8"
+            Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource AccentBrush}"
+            BorderThickness="1">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.16" />
+        </Transitions>
+      </Border.Transitions>
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+        <PathIcon Width="18"
+                  Height="18"
+                  Foreground="{DynamicResource SuccessBrush}"
+                  VerticalAlignment="Center"
+                  Data="M9,16.17 L4.83,12 L3.41,13.41 L9,19 L21,7 L19.59,5.59 Z" />
+        <TextBlock x:Name="TransientNotificationText"
+                   Grid.Column="1"
+                   VerticalAlignment="Center"
+                   TextWrapping="Wrap"
+                   FontWeight="SemiBold" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

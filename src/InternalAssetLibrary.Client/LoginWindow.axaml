@@ -1,0 +1,71 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:InternalAssetLibrary.Client"
+        x:Class="InternalAssetLibrary.Client.LoginWindow"
+        Title="登录云汀素材管理工具"
+        Width="520"
+        MaxHeight="820"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBackgroundBrush}">
+  <Grid Margin="26">
+    <StackPanel Spacing="14">
+      <StackPanel Margin="0,0,0,6">
+        <TextBlock x:Name="LoginHeadingText" Text="连接团队素材库" Classes="pageTitle" FontSize="22" />
+        <TextBlock x:Name="ServerAddressText" Classes="muted" Margin="0,5,0,0" />
+      </StackPanel>
+
+      <Border x:Name="SavedAccountsSection" IsVisible="False" Classes="glass" CornerRadius="8" Padding="12">
+        <StackPanel Spacing="9">
+          <TextBlock Text="已保存账号" FontWeight="SemiBold" />
+          <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="SavedAccountsList">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type local:SavedLoginAccountItem}">
+                  <Border Margin="0,0,0,7" Padding="10" CornerRadius="8" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                    <Border.ContextMenu>
+                      <ContextMenu>
+                        <MenuItem Header="删除保存的账号" Click="DeleteSavedAccount_OnClick" />
+                      </ContextMenu>
+                    </Border.ContextMenu>
+                    <Grid ColumnDefinitions="38,*,Auto" ColumnSpacing="10">
+                      <Border Width="36" Height="36" CornerRadius="8" Background="{DynamicResource AccentSoftBrush}">
+                        <TextBlock Text="{Binding Initial}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" />
+                      </Border>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding DisplayLabel}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding DetailLabel}" Classes="muted" FontSize="10" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                      <Button Grid.Column="2" Classes="quiet" MinWidth="76" IsEnabled="{Binding CanLogin}" Content="{Binding ActionLabel}" Click="SavedAccountLogin_OnClick" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </StackPanel>
+      </Border>
+
+      <StackPanel>
+        <TextBlock Text="用户名或绑定邮箱" Classes="muted" Margin="0,0,0,5" />
+        <TextBox x:Name="IdentifierBox" MaxLength="254" />
+      </StackPanel>
+      <StackPanel>
+        <TextBlock Text="密码" Classes="muted" Margin="0,0,0,5" />
+        <TextBox x:Name="PasswordBox" PasswordChar="*" MaxLength="128" KeyDown="LoginField_OnKeyDown" />
+      </StackPanel>
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+        <ToggleSwitch x:Name="RememberAccountToggle" Content="记住账号" IsChecked="True" IsCheckedChanged="RememberAccount_OnChanged" />
+        <ToggleSwitch x:Name="RememberPasswordToggle" Grid.Column="1" Content="记住密码" IsCheckedChanged="RememberPassword_OnChanged" />
+      </Grid>
+      <TextBlock Text="密码仅保存在当前 Windows 用户的系统凭据库中。" Classes="muted" FontSize="10" TextWrapping="Wrap" />
+      <TextBlock x:Name="LoginStatusText" Classes="muted" TextWrapping="Wrap" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+        <Button Classes="quiet" Click="Cancel_OnClick">取消</Button>
+        <Button x:Name="LoginButton" Classes="accent" Click="Login_OnClick">登录</Button>
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</Window>

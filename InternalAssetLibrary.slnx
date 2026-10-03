@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/InternalAssetLibrary.Client/InternalAssetLibrary.Client.csproj" />
+    <Project Path="src/InternalAssetLibrary.Client.Core/InternalAssetLibrary.Client.Core.csproj" />
+    <Project Path="src/InternalAssetLibrary.Contracts/InternalAssetLibrary.Contracts.csproj" />
+    <Project Path="src/InternalAssetLibrary.Core/InternalAssetLibrary.Core.csproj" />
+    <Project Path="src/InternalAssetLibrary.Server/InternalAssetLibrary.Server.csproj" />
+    <Project Path="src/InternalAssetLibrary.Updater/InternalAssetLibrary.Updater.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/InternalAssetLibrary.RealtimeSmoke/InternalAssetLibrary.RealtimeSmoke.csproj" />
+    <Project Path="tests/InternalAssetLibrary.SelfTests/InternalAssetLibrary.SelfTests.csproj" />
+  </Folder>
+</Solution>

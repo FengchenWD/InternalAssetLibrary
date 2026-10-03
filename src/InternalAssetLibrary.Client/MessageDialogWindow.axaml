@@ -1,0 +1,46 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="InternalAssetLibrary.Client.MessageDialogWindow"
+        Width="440"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBackgroundBrush}">
+  <Grid RowDefinitions="Auto,Auto" Margin="22">
+    <Grid ColumnDefinitions="44,*" ColumnSpacing="14">
+      <Border Width="40"
+              Height="40"
+              CornerRadius="8"
+              Background="{DynamicResource AccentSoftBrush}">
+        <TextBlock Text="!"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource AccentBrush}"
+                   FontSize="20"
+                   FontWeight="Bold" />
+      </Border>
+      <StackPanel Grid.Column="1" Spacing="6">
+        <TextBlock x:Name="DialogTitle"
+                   Classes="sectionTitle"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="DialogMessage"
+                   Classes="muted"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Grid>
+    <StackPanel Grid.Row="1"
+                Margin="0,20,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="8">
+      <Button x:Name="CancelButton"
+              IsVisible="False"
+              Classes="quiet"
+              Click="Cancel_OnClick">取消</Button>
+      <Button x:Name="ConfirmButton"
+              Classes="accent"
+              Click="Confirm_OnClick">知道了</Button>
+    </StackPanel>
+  </Grid>
+</Window>

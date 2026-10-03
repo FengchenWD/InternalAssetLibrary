@@ -1,0 +1,55 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="InternalAssetLibrary.Client.LutExportPresetWindow"
+        Title="视频导出"
+        Width="560"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBackgroundBrush}"
+        TransparencyLevelHint="Mica, AcrylicBlur, None">
+  <Grid RowDefinitions="Auto,Auto,Auto" Margin="24">
+    <StackPanel>
+      <TextBlock Text="选择视频导出格式" Classes="pageTitle" FontSize="22" />
+      <TextBlock Text="导出会创建新文件，不会修改原视频或云端文件。"
+                 Classes="muted"
+                 Margin="0,6,0,0"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <StackPanel Grid.Row="1" Margin="0,20,0,0" Spacing="10">
+      <Border Classes="glass" Padding="14" CornerRadius="8">
+        <RadioButton x:Name="ProResOption" GroupName="Preset" IsChecked="True">
+          <StackPanel Margin="8,0,0,0">
+            <TextBlock Text="ProRes 422 HQ · MOV" FontWeight="SemiBold" />
+            <TextBlock Text="10-bit 4:2:2、高质量中间格式，文件较大，适合继续剪辑。"
+                       Classes="muted"
+                       Margin="0,4,0,0"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </RadioButton>
+      </Border>
+      <Border Classes="glass" Padding="14" CornerRadius="8">
+        <RadioButton x:Name="H264Option" GroupName="Preset">
+          <StackPanel Margin="8,0,0,0">
+            <TextBlock Text="高质量 H.264 · MP4" FontWeight="SemiBold" />
+            <TextBlock Text="兼容性好、文件较小，适合快速预览和直接交付。"
+                       Classes="muted"
+                       Margin="0,4,0,0"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </RadioButton>
+      </Border>
+    </StackPanel>
+
+    <StackPanel Grid.Row="2"
+                Margin="0,20,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="8">
+      <Button Classes="quiet" Click="Cancel_OnClick">取消</Button>
+      <Button Classes="accent" Click="Confirm_OnClick">选择保存位置</Button>
+    </StackPanel>
+  </Grid>
+</Window>

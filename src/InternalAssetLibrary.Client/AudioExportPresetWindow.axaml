@@ -1,0 +1,55 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="InternalAssetLibrary.Client.AudioExportPresetWindow"
+        Title="音频片段导出"
+        Width="560"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBackgroundBrush}"
+        TransparencyLevelHint="Mica, AcrylicBlur, None">
+  <Grid RowDefinitions="Auto,Auto,Auto" Margin="24">
+    <StackPanel>
+      <TextBlock Text="选择音频导出格式" Classes="pageTitle" FontSize="22" />
+      <TextBlock Text="导出会创建无损音频文件，不会修改原素材。"
+                 Classes="muted"
+                 Margin="0,6,0,0"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <StackPanel Grid.Row="1" Margin="0,20,0,0" Spacing="10">
+      <Border Classes="glass" Padding="14" CornerRadius="8">
+        <RadioButton x:Name="FlacOption" GroupName="Preset" IsChecked="True">
+          <StackPanel Margin="8,0,0,0">
+            <TextBlock Text="FLAC" FontWeight="SemiBold" />
+            <TextBlock Text="无损压缩，文件较小，适合保存和继续编辑。"
+                       Classes="muted"
+                       Margin="0,4,0,0"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </RadioButton>
+      </Border>
+      <Border Classes="glass" Padding="14" CornerRadius="8">
+        <RadioButton x:Name="WavOption" GroupName="Preset">
+          <StackPanel Margin="8,0,0,0">
+            <TextBlock Text="WAV · 24-bit PCM" FontWeight="SemiBold" />
+            <TextBlock Text="未压缩无损格式，兼容主流音频编辑软件，文件较大。"
+                       Classes="muted"
+                       Margin="0,4,0,0"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </RadioButton>
+      </Border>
+    </StackPanel>
+
+    <StackPanel Grid.Row="2"
+                Margin="0,20,0,0"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="8">
+      <Button Classes="quiet" Click="Cancel_OnClick">取消</Button>
+      <Button Classes="accent" Click="Confirm_OnClick">选择保存位置</Button>
+    </StackPanel>
+  </Grid>
+</Window>

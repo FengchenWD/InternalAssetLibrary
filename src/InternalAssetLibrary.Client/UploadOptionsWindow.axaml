@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="InternalAssetLibrary.Client.UploadOptionsWindow"
+        Title="批量上传素材"
+        Width="560"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBackgroundBrush}">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="24">
+    <StackPanel>
+      <TextBlock Text="上传素材" Classes="pageTitle" FontSize="22" />
+      <TextBlock x:Name="FileSummaryText" Classes="muted" Margin="0,5,0,0" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,220" Margin="0,20,0,0">
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock Text="音频大类型" />
+        <TextBlock Text="图片和视频会自动分类" Classes="muted" FontSize="11" />
+      </StackPanel>
+      <ComboBox x:Name="AudioCategoryPicker" Grid.Column="1" SelectedIndex="0">
+        <ComboBoxItem Content="BGM" />
+        <ComboBoxItem Content="音效" />
+      </ComboBox>
+    </Grid>
+
+    <StackPanel Grid.Row="2" Margin="0,16,0,0">
+      <TextBlock x:Name="TagsLabel" Text="统一标签（选填）" Classes="muted" Margin="0,0,0,5" />
+      <Button x:Name="TagSelectionButton"
+              HorizontalContentAlignment="Left"
+              Classes="quiet"
+              Click="SelectTags_OnClick">
+        <TextBlock x:Name="TagSelectionText" Text="选择已有标签" TextTrimming="CharacterEllipsis" />
+      </Button>
+    </StackPanel>
+
+    <StackPanel Grid.Row="3" Margin="0,16,0,0">
+      <TextBlock Text="统一备注（选填）" Classes="muted" Margin="0,0,0,5" />
+      <TextBox x:Name="NotesBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="76" MaxLength="2000" />
+      <TextBlock x:Name="StatusText" Classes="muted" Margin="0,8,0,0" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,20,0,0">
+      <Button Classes="quiet" Click="Cancel_OnClick">取消</Button>
+      <Button Classes="accent" Click="Confirm_OnClick">开始上传</Button>
+    </StackPanel>
+  </Grid>
+</Window>

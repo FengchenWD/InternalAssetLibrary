@@ -1,0 +1,68 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:InternalAssetLibrary.Client"
+        x:Class="InternalAssetLibrary.Client.SemanticColorEditorWindow"
+        Title="自定义界面颜色"
+        Width="600"
+        Height="670"
+        MinHeight="600"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBackgroundBrush}">
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="24">
+    <Grid ColumnDefinitions="*,190">
+      <StackPanel>
+        <TextBlock Text="自定义颜色" Classes="pageTitle" FontSize="22" />
+        <TextBlock Text="深色和浅色主题分别保存" Classes="muted" Margin="0,5,0,0" />
+      </StackPanel>
+      <ComboBox x:Name="PalettePicker" Grid.Column="1" SelectedIndex="0" SelectionChanged="PalettePicker_OnSelectionChanged">
+        <ComboBoxItem Content="深色主题" />
+        <ComboBoxItem Content="浅色主题" />
+      </ComboBox>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="180,72,*" Margin="0,20,0,8">
+      <TextBlock Text="语义色槽" Classes="muted" />
+      <TextBlock Grid.Column="1" Text="预览" Classes="muted" HorizontalAlignment="Center" />
+      <TextBlock Grid.Column="2" Text="颜色值" Classes="muted" />
+    </Grid>
+
+    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+      <ItemsControl ItemsSource="{Binding Slots}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="{x:Type local:ColorSlotEditor}">
+            <Grid ColumnDefinitions="180,72,*" Margin="0,5">
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="{Binding Label}" />
+                <TextBlock Text="{Binding Key}" Classes="muted" FontSize="10" />
+              </StackPanel>
+              <ColorPicker Grid.Column="1"
+                           Width="64"
+                           Height="34"
+                           MinWidth="64"
+                           HorizontalAlignment="Center"
+                           CornerRadius="8"
+                           Color="{Binding SelectedColor, Mode=TwoWay}"
+                           HexInputAlphaPosition="Leading"
+                           IsAlphaEnabled="True"
+                           IsAlphaVisible="True"
+                           ToolTip.Tip="{Binding Label}" />
+              <TextBox Grid.Column="2" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" MaxLength="9" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+    <Grid Grid.Row="3" RowDefinitions="Auto,Auto" Margin="0,14,0,0">
+      <TextBlock x:Name="StatusText" Classes="muted" TextWrapping="Wrap" />
+      <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,14,0,0">
+        <Button Classes="quiet" HorizontalAlignment="Left" Click="RestoreDefaults_OnClick">恢复当前主题默认值</Button>
+        <Button Grid.Column="1" Classes="quiet" Click="Cancel_OnClick">取消</Button>
+        <Button Grid.Column="2" Classes="quiet" Click="Preview_OnClick">应用预览</Button>
+        <Button Grid.Column="3" Classes="accent" Click="Save_OnClick">保存</Button>
+      </Grid>
+    </Grid>
+  </Grid>
+</Window>

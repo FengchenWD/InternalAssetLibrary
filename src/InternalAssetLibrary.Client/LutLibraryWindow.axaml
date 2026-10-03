@@ -1,0 +1,222 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:InternalAssetLibrary.Client"
+        x:Class="InternalAssetLibrary.Client.LutLibraryWindow"
+        x:DataType="local:LutLibraryWindow"
+        Title="LUT 库"
+        Width="1040"
+        Height="690"
+        MinWidth="860"
+        MinHeight="560"
+        CanResize="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBackgroundBrush}"
+        TransparencyLevelHint="Mica, AcrylicBlur, None">
+  <Grid x:Name="DialogContent" RowDefinitions="Auto,*,Auto" Margin="24">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+      <StackPanel>
+        <TextBlock Text="LUT 库" Classes="pageTitle" FontSize="22" />
+        <TextBlock Text="连接本地 .cube 文件，或调用团队共享 LUT。LUT 不会自动判断 Log 类型。"
+                   Classes="muted"
+                   Margin="0,6,0,0"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+      <Button Grid.Column="1" Classes="quiet" Click="RefreshAll_OnClick">刷新</Button>
+    </Grid>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="*,*"
+          ColumnSpacing="14"
+          Margin="0,20,0,0">
+      <Border Classes="glass" Padding="16" CornerRadius="8">
+        <Grid RowDefinitions="Auto,*,Auto,32">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <StackPanel>
+              <TextBlock Text="本地 LUT" Classes="sectionTitle" />
+              <TextBlock Text="仅保存原文件位置，不复制或修改 .cube 文件。"
+                         Classes="muted"
+                         Margin="0,4,0,0"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="accent" Click="ConnectLocal_OnClick">连接文件</Button>
+          </Grid>
+
+          <Grid Grid.Row="1" Margin="0,14,0,0">
+            <ListBox x:Name="LocalLutList"
+                     ItemsSource="{Binding LocalItems}"
+                     SelectionChanged="LocalLutList_OnSelectionChanged">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="local:LocalLutItemViewModel">
+                  <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10" Margin="2">
+                    <StackPanel>
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding Path}"
+                                 Classes="muted"
+                                 FontSize="12"
+                                 Margin="0,3,0,0"
+                                 TextTrimming="CharacterEllipsis"
+                                 ToolTip.Tip="{Binding Path}" />
+                      <TextBlock Text="{Binding Detail}"
+                                 Classes="muted"
+                                 FontSize="12"
+                                 Margin="0,3,0,0" />
+                    </StackPanel>
+                    <Border Grid.Column="1"
+                            Padding="8,4"
+                            CornerRadius="8"
+                            Background="{DynamicResource SurfaceRaisedBrush}"
+                            VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Status}" FontSize="12" />
+                    </Border>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock x:Name="LocalEmptyText"
+                       Text="还没有连接本地 LUT。"
+                       Classes="muted"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+          </Grid>
+
+          <StackPanel x:Name="LocalLutActionPanel"
+                      Grid.Row="2"
+                      MinHeight="40"
+                      Margin="0,14,0,0"
+                      Orientation="Horizontal"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Bottom"
+                      Spacing="8">
+            <Button x:Name="UploadSelectedLocalButton"
+                    Classes="accent"
+                    IsEnabled="False"
+                    Click="UploadSelectedLocal_OnClick">上传已选</Button>
+            <Button x:Name="RefreshLocalButton"
+                    Classes="quiet"
+                    IsEnabled="False"
+                    Click="RefreshLocal_OnClick">检查文件</Button>
+            <Button x:Name="RemoveLocalButton"
+                    Classes="quiet"
+                    IsEnabled="False"
+                    Click="RemoveLocal_OnClick">移除链接</Button>
+          </StackPanel>
+
+          <Border Grid.Row="3" Height="32" />
+        </Grid>
+      </Border>
+
+      <Border Grid.Column="1" Classes="glass" Padding="16" CornerRadius="8">
+        <Grid RowDefinitions="Auto,*,Auto,32">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <StackPanel>
+              <TextBlock Text="团队云端 LUT" Classes="sectionTitle" />
+              <TextBlock x:Name="CloudDescriptionText"
+                         Text="所有团队成员均可下载和调用，上传者与管理员可维护。"
+                         Classes="muted"
+                         Margin="0,4,0,0"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+            <Button x:Name="UploadCloudButton"
+                    Grid.Column="1"
+                    Classes="accent"
+                    Click="UploadCloud_OnClick">上传 LUT</Button>
+          </Grid>
+
+          <Grid Grid.Row="1" Margin="0,14,0,0">
+            <ListBox x:Name="CloudLutList"
+                     ItemsSource="{Binding CloudItems}"
+                     SelectionMode="Multiple,Toggle"
+                     SelectionChanged="CloudLutList_OnSelectionChanged">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="local:CloudLutItemViewModel">
+                  <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10" Margin="2">
+                    <StackPanel>
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding OwnerLine}"
+                                 Classes="muted"
+                                 FontSize="12"
+                                 Margin="0,3,0,0"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding Detail}"
+                                 Classes="muted"
+                                 FontSize="12"
+                                 Margin="0,3,0,0"
+                                 TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <Border Grid.Column="1"
+                            Padding="8,4"
+                            CornerRadius="8"
+                            Background="{DynamicResource SurfaceRaisedBrush}"
+                            VerticalAlignment="Center">
+                      <TextBlock Text="{Binding VersionText}" FontSize="12" />
+                    </Border>
+                    <Button Grid.Column="2"
+                            Classes="quiet"
+                            VerticalAlignment="Center"
+                            Click="DownloadCloudToExternal_OnClick">下载</Button>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock x:Name="CloudEmptyText"
+                       Text="团队云端 LUT 库为空。"
+                       Classes="muted"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+          </Grid>
+
+          <WrapPanel x:Name="CloudLutActionPanel"
+                     Grid.Row="2"
+                     MinHeight="40"
+                     Margin="0,14,0,0"
+                     HorizontalAlignment="Right"
+                     VerticalAlignment="Bottom"
+                     Orientation="Horizontal">
+            <Button x:Name="DownloadSelectedCloudLutsButton"
+                    Classes="quiet"
+                    Margin="0,0,8,0"
+                    IsEnabled="False"
+                    Click="DownloadSelectedCloudLuts_OnClick">批量下载</Button>
+            <Button x:Name="DownloadCloudButton"
+                    Classes="accent"
+                    Margin="0,0,8,0"
+                    IsEnabled="False"
+                    Click="DownloadCloud_OnClick">下载并连接</Button>
+            <Button x:Name="EditCloudButton"
+                    Classes="quiet"
+                    Margin="0,0,8,0"
+                    IsEnabled="False"
+                    Click="EditCloud_OnClick">名称 / 备注</Button>
+            <Button x:Name="ReplaceCloudButton"
+                    Classes="quiet"
+                    Margin="0,0,8,0"
+                    IsEnabled="False"
+                    Click="ReplaceCloud_OnClick">换源</Button>
+            <Button x:Name="RecycleCloudButton"
+                    Classes="quiet"
+                    Margin="0"
+                    IsEnabled="False"
+                    Click="RecycleCloud_OnClick">移至回收站</Button>
+          </WrapPanel>
+
+          <TextBlock x:Name="CloudSelectionHint"
+                     Grid.Row="3"
+                     Height="32"
+                     Classes="muted"
+                     FontSize="12"
+                     VerticalAlignment="Center"
+                     TextWrapping="Wrap" />
+        </Grid>
+      </Border>
+    </Grid>
+
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+      <TextBlock x:Name="StatusText"
+                 Classes="muted"
+                 VerticalAlignment="Center"
+                 TextWrapping="Wrap" />
+      <Button Grid.Column="1" Classes="accent" Click="Close_OnClick">完成</Button>
+    </Grid>
+  </Grid>
+</Window>

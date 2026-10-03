@@ -1,0 +1,74 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="InternalAssetLibrary.Client.EditorExportOptionsWindow"
+        Title="导出"
+        Width="560"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+        Margin="24"
+        RowSpacing="12">
+    <TextBlock Text="导出设置" Classes="pageTitle" FontSize="22" />
+
+    <CheckBox Grid.Row="1"
+              x:Name="UseSourceSettingsBox"
+              IsChecked="True"
+              Content="按原素材设置导出"
+              Checked="UseSourceSettings_OnChanged"
+              Unchecked="UseSourceSettings_OnChanged" />
+
+    <StackPanel Grid.Row="2" x:Name="VideoOptionsPanel" Spacing="10">
+      <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
+        <TextBlock Text="视频比例" VerticalAlignment="Center" />
+        <ComboBox x:Name="RatioBox" Grid.Column="1" SelectedIndex="0" SelectionChanged="RatioBox_OnChanged">
+          <ComboBoxItem Content="16:9" />
+          <ComboBoxItem Content="9:16" />
+          <ComboBoxItem Content="4:3" />
+          <ComboBoxItem Content="1:1" />
+          <ComboBoxItem Content="自定义" />
+        </ComboBox>
+        <TextBlock Text="格式" Grid.Column="2" VerticalAlignment="Center" />
+        <ComboBox x:Name="VideoFormatBox" Grid.Column="3" SelectedIndex="0">
+          <ComboBoxItem Content="MP4" />
+          <ComboBoxItem Content="MOV" />
+        </ComboBox>
+      </Grid>
+      <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
+        <TextBlock Text="宽" VerticalAlignment="Center" />
+        <TextBox x:Name="WidthBox" Grid.Column="1" />
+        <TextBlock Text="高" Grid.Column="2" VerticalAlignment="Center" />
+        <TextBox x:Name="HeightBox" Grid.Column="3" />
+      </Grid>
+      <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
+        <TextBlock Text="帧率" VerticalAlignment="Center" />
+        <TextBox x:Name="FrameRateBox" Grid.Column="1" />
+        <TextBlock Text="视频码率" Grid.Column="2" VerticalAlignment="Center" />
+        <TextBox x:Name="VideoBitrateBox" Grid.Column="3" Watermark="kbps" />
+      </Grid>
+      <TextBlock Text="分辨率和码率单位为像素与 kbps；帧率支持小数。" Classes="muted" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <StackPanel Grid.Row="2" x:Name="AudioOptionsPanel" IsVisible="False" Spacing="10">
+      <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
+        <TextBlock Text="格式" VerticalAlignment="Center" />
+        <ComboBox x:Name="AudioFormatBox" Grid.Column="1" SelectedIndex="0">
+          <ComboBoxItem Content="MP3" />
+          <ComboBoxItem Content="WAV" />
+          <ComboBoxItem Content="FLAC" />
+          <ComboBoxItem Content="M4A (AAC)" />
+        </ComboBox>
+        <TextBlock Text="码率" Grid.Column="2" VerticalAlignment="Center" />
+        <TextBox x:Name="AudioBitrateBox" Grid.Column="3" Watermark="kbps" />
+      </Grid>
+      <TextBlock Text="码率适用于 MP3 和 M4A；WAV/FLAC 将按格式自身编码规则导出。" Classes="muted" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <TextBlock Grid.Row="3" x:Name="StatusText" Classes="muted" TextWrapping="Wrap" />
+    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Classes="quiet" Click="Cancel_OnClick">取消</Button>
+      <Button Classes="accent" Click="Confirm_OnClick">继续</Button>
+    </StackPanel>
+  </Grid>
+</Window>

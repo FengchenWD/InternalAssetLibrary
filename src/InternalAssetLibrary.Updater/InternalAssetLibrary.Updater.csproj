@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>1.2.0</Version>
+    <AssemblyTitle>云汀素材管理工具更新助手</AssemblyTitle>
+    <Product>云汀素材管理工具更新助手</Product>
+    <Description>云汀素材管理工具静默更新与恢复组件</Description>
+    <Company>风尘WD(FengchenWD)</Company>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\InternalAssetLibrary.Contracts\InternalAssetLibrary.Contracts.csproj" />
+    <ProjectReference Include="..\InternalAssetLibrary.Core\InternalAssetLibrary.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="InternalAssetLibrary.SelfTests" />
+  </ItemGroup>
+</Project>

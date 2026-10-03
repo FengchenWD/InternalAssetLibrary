@@ -1,0 +1,102 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:InternalAssetLibrary.Client"
+        x:Class="InternalAssetLibrary.Client.CloudDownloadDestinationWindow"
+        x:DataType="local:CloudDownloadDestinationWindow"
+        Title="选择下载目录"
+        Width="720"
+        Height="600"
+        MinWidth="520"
+        MinHeight="430"
+        CanResize="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBackgroundBrush}"
+        TransparencyLevelHint="Mica, AcrylicBlur, None">
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="24" RowSpacing="14">
+    <StackPanel>
+      <TextBlock Text="选择下载目录" Classes="pageTitle" FontSize="22" />
+      <TextBlock Text="可以选择电脑中的任意文件夹，或选择已连接到素材库的具体目录。"
+                 Classes="muted"
+                 Margin="0,6,0,0"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <Border Grid.Row="1" Classes="glass" Padding="14">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="电脑中的文件夹" FontWeight="SemiBold" />
+          <TextBlock Text="打开系统目录选择器，下载到硬盘上的指定位置。"
+                     Classes="muted"
+                     Margin="0,3,0,0" />
+        </StackPanel>
+        <Button Grid.Column="1"
+                Classes="accent"
+                VerticalAlignment="Center"
+                Click="ChooseComputerFolder_OnClick">选择目录</Button>
+      </Grid>
+    </Border>
+
+    <StackPanel Grid.Row="2" Spacing="6">
+      <CheckBox x:Name="SetAsDefaultCheckBox" Content="将本次下载路径设为默认下载目录" />
+      <CheckBox x:Name="UseDefaultForFutureCheckBox" Content="默认下载素材至默认目录" IsChecked="True" />
+    </StackPanel>
+
+    <Border Grid.Row="3" Classes="glass" Padding="12" ClipToBounds="True">
+      <Grid RowDefinitions="Auto,*" RowSpacing="10">
+        <StackPanel>
+          <TextBlock Text="本地素材库目录" Classes="sectionTitle" />
+          <TextBlock Text="选择一个已连接且当前可用的具体目录。"
+                     Classes="muted"
+                     Margin="0,3,0,0" />
+        </StackPanel>
+        <TreeView x:Name="FolderTree"
+                  Grid.Row="1"
+                  ItemsSource="{Binding FolderNodes}"
+                  SelectionChanged="FolderTree_OnSelectionChanged">
+          <TreeView.ItemTemplate>
+            <TreeDataTemplate DataType="{x:Type local:CloudDownloadFolderOption}"
+                              ItemsSource="{Binding Children}">
+              <Grid ColumnDefinitions="22,*,Auto"
+                    MinHeight="32"
+                    Background="Transparent"
+                    ToolTip.Tip="{Binding FullPath}"
+                    ToolTip.ShowDelay="250">
+                <PathIcon Width="17"
+                          Height="17"
+                          VerticalAlignment="Center"
+                          Data="M3,5 L9,5 L11,7 L21,7 L21,19 L3,19 Z" />
+                <TextBlock Grid.Column="1"
+                           Margin="6,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="{Binding DisplayName}"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="2"
+                           Margin="8,0,4,0"
+                           VerticalAlignment="Center"
+                           Text="不可用"
+                           Foreground="{DynamicResource WarningBrush}"
+                           FontSize="10"
+                           IsVisible="{Binding IsOffline}" />
+              </Grid>
+            </TreeDataTemplate>
+          </TreeView.ItemTemplate>
+        </TreeView>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="4" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+      <TextBlock x:Name="StatusText"
+                 Classes="muted"
+                 VerticalAlignment="Center"
+                 TextWrapping="Wrap" />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+        <Button Classes="quiet" Click="Cancel_OnClick">取消</Button>
+        <Button x:Name="ConfirmButton"
+                Classes="accent"
+                IsEnabled="False"
+                Click="Confirm_OnClick">下载到所选目录</Button>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</Window>
